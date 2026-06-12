@@ -1,0 +1,8 @@
+fastmcp==3.4.2
+httpx==0.28.1
+pydantic==2.13.4
+pydantic-settings==2.14.1
+python-dotenv==1.2.2
+aiosqlite==0.22.0
+pytest==9.0.3
+pytest-asyncio==1.4.0
