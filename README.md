@@ -12,6 +12,7 @@ O projeto nasce com foco em cidades brasileiras com desafios graves de seguranç
 - [Stack técnica e hospedagem](docs/stack-e-hospedagem.md): decisão atual de começar com MVP leve em Python/FastMCP + SQLite, mantendo PostgreSQL/PostGIS e Redis como evolução.
 - [Fontes de dados](docs/fontes-de-dados.md): fontes priorizadas, forma de acesso e papel de cada base no produto.
 - [API Fogo Cruzado](docs/fogocruzado-api.md): base oficial da API v2, autenticacao, endpoints priorizados e testes de integracao.
+- [Ferramentas MCP](docs/ferramentas-mcp.md): proposta de ferramentas públicas do servidor MCP, descrições, entradas, saídas e priorização.
 
 ## Visão do produto
 
