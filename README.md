@@ -11,6 +11,7 @@ O projeto nasce com foco em cidades brasileiras com desafios graves de seguranç
 - [OpenAI Apps SDK](docs/openai-apps-sdk.md): resumo dos conceitos básicos do SDK oficial da OpenAI, links úteis e caminho sugerido para transformar o Sinal Aberto em app do ChatGPT e servidor MCP aberto.
 - [Stack técnica e hospedagem](docs/stack-e-hospedagem.md): decisão atual de começar com MVP leve em Python/FastMCP + SQLite, mantendo PostgreSQL/PostGIS e Redis como evolução.
 - [Fontes de dados](docs/fontes-de-dados.md): fontes priorizadas, forma de acesso e papel de cada base no produto.
+- [API Fogo Cruzado](docs/fogocruzado-api.md): base oficial da API v2, autenticacao, endpoints priorizados e testes de integracao.
 
 ## Visão do produto
 
