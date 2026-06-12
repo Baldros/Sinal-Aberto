@@ -6,6 +6,10 @@ O projeto nasce com foco em cidades brasileiras com desafios graves de seguranç
 
 > O Sinal Aberto não pretende ser um radar absoluto de operações policiais, nem uma fonte oficial de emergência. A proposta é interpretar dados públicos e sinais recentes para indicar evidências, incertezas e impacto provável em tempo quase real.
 
+## Documentos do projeto
+
+- [OpenAI Apps SDK](docs/openai-apps-sdk.md): resumo dos conceitos básicos do SDK oficial da OpenAI, links úteis e caminho sugerido para transformar o Sinal Aberto em app do ChatGPT e servidor MCP aberto.
+
 ## Visão do produto
 
 A ideia inicial é construir um app para o ChatGPT capaz de responder perguntas como:
