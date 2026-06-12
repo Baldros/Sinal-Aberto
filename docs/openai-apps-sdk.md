@@ -13,6 +13,7 @@ O caminho mais alinhado com isso é construir o Sinal Aberto como um **servidor 
 Em termos práticos:
 
 - o **backend/MCP server** concentra os dados, ferramentas, scores, regras de segurança e explicabilidade;
+- no MVP, esse backend deve ser leve: Python/FastMCP, SQLite, cache curto e clusterização no código da aplicação;
 - o **ChatGPT app** usa esse servidor para responder perguntas e, se necessário, renderizar uma interface visual;
 - outros chatbots podem usar a mesma camada MCP quando houver compatibilidade;
 - a lógica pública do projeto não fica presa a um único cliente.
@@ -257,6 +258,7 @@ Servidor MCP do Sinal Aberto
         v
 Backend de dados
         |
+        +-- SQLite no MVP
         +-- Fogo Cruzado
         +-- ISP Dados
         +-- SINESP / MJSP
@@ -264,15 +266,19 @@ Backend de dados
         +-- fontes complementares verificadas
 ```
 
+No MVP, SQLite deve armazenar ocorrências normalizadas, clusters recentes e cache curto. PostgreSQL/PostGIS e Redis ficam como evolução quando houver maior escala, consultas espaciais complexas ou necessidade de várias instâncias.
+
 ## Roadmap técnico sugerido
 
 - [ ] Validar acesso, termos e limites da API do Fogo Cruzado.
-- [ ] Criar backend mínimo de consulta e cache.
+- [ ] Criar backend mínimo em Python/FastMCP.
+- [ ] Definir schema SQLite inicial para ocorrências, clusters e cache.
+- [ ] Criar camada de consulta e cache curto.
 - [ ] Definir ferramentas MCP iniciais.
 - [ ] Criar servidor MCP local.
 - [ ] Testar no ChatGPT via Developer Mode.
 - [ ] Implementar score probabilístico inicial.
-- [ ] Implementar agrupamento por clusters.
+- [ ] Implementar agrupamento por clusters no código da aplicação.
 - [ ] Adicionar respostas explicáveis.
 - [ ] Avaliar necessidade de componente web.
 - [ ] Preparar política de privacidade.

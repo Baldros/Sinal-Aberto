@@ -24,7 +24,7 @@ Usuário -> ChatGPT / cliente MCP
         Servidor MCP do Sinal Aberto
               |
               v
-        Fogo Cruzado API / cache / banco geoespacial
+        Fogo Cruzado API / SQLite / cache leve
 ```
 
 A documentação oficial do Apps SDK recomenda que, em desenvolvimento local, o servidor seja exposto com túnel como `ngrok`; para deploy, o servidor e o bundle do componente devem ficar atrás de um endpoint HTTPS estável, com baixa latência, TLS confiável, logs e métricas.
@@ -44,15 +44,15 @@ Fontes oficiais relevantes:
 | Linguagem | Python 3.12+ | Python ou TypeScript | Python favorece geoprocessamento; TypeScript favorece Cloudflare Workers e exemplos de MCP serverless. |
 | Framework MCP | FastMCP / SDK MCP | FastMCP, SDK MCP ou Worker MCP em TypeScript | Para MVP, o objetivo é validar ferramentas e contrato MCP antes de fechar a stack final. |
 | Transporte | Streamable HTTP | Streamable HTTP | Transporte remoto atual para servidores MCP acessíveis via rede. |
-| Banco de dados | PostgreSQL + PostGIS | Neon Free, Supabase Free, Render Postgres Free temporário ou SQLite apenas local | PostGIS será importante para clustering geoespacial; para MVP, dá para começar com queries simples ou geohash sem PostGIS completo. |
-| Cache | Redis / Valkey | KV, cache em memória, Cloudflare KV ou Redis free/temporário | O MVP precisa reduzir pressão sobre APIs externas, mas não precisa começar com Redis dedicado. |
+| Banco de dados | PostgreSQL + PostGIS, quando a escala justificar | SQLite no MVP Python; D1 se for Worker; Postgres externo só se necessário | O MVP pode filtrar por tempo, cidade, bairro, bounding box e raio aproximado sem PostGIS. PostGIS entra quando houver geoprocessamento complexo ou concorrência maior. |
+| Cache | Redis / Valkey, quando a escala justificar | Memória, tabela SQLite, Cloudflare KV ou cache da plataforma | O MVP precisa reduzir pressão sobre APIs externas, mas não precisa começar com Redis dedicado. |
 | HTTP client | httpx | httpx / fetch | Consultas assíncronas, timeout e retry configuráveis. |
 | Autenticação | OAuth 2.1 quando necessário | Sem login no MVP, se possível | Para o primeiro MVP, priorizar dados públicos/agregados e evitar localização precisa do usuário. |
 | Observabilidade | Logs, métricas, alertas | Logs básicos da plataforma | Essencial para depurar chamadas MCP e falhas de integração. |
 
 ### Decisão prática
 
-Para **produção**, a stack ideal continua sendo:
+Para **produção ou escala**, a stack ideal continua sendo:
 
 ```text
 Python + FastMCP
@@ -65,15 +65,42 @@ HTTPS + logs + métricas
 Para **MVP gratuito**, a stack deve ser mais leve:
 
 ```text
-Servidor MCP simples
+Python + FastMCP
+SQLite com WAL
+Cache curto em memória ou SQLite
 Sem login de usuário
-Sem persistência pesada no início
-Cache curto
 Consulta direta à API externa autorizada
 Deploy em free tier com HTTPS
 ```
 
-A regra é: **validar utilidade e segurança antes de otimizar infraestrutura**.
+A regra é: **validar utilidade e segurança antes de pagar o custo operacional de infraestrutura pesada**.
+
+### Decisão de MVP: SQLite primeiro
+
+A decisão atual é iniciar o MVP com **SQLite** no backend Python. Essa escolha reduz serviços externos, portas expostas, credenciais de banco, custo mensal e complexidade de deploy.
+
+SQLite é suficiente para o primeiro recorte se o sistema:
+
+- rodar como uma única instância MCP;
+- tiver poucas escritas simultâneas;
+- fizer ingestão periódica ou sob demanda da API do Fogo Cruzado;
+- mantiver um histórico pequeno ou moderado;
+- usar índices por cidade, estado, data, latitude e longitude;
+- filtrar por bounding box antes de calcular distância real no Python;
+- calcular score e clusters no código, salvando resultados agregados para reutilização.
+
+O MVP deve evitar recalcular clusters pesados a cada pergunta. A abordagem preferida é pré-calcular ou cachear clusters recentes e responder as ferramentas MCP a partir de dados já normalizados.
+
+PostgreSQL/PostGIS deixa de ser requisito inicial e vira gatilho de evolução quando houver:
+
+- múltiplas instâncias escrevendo no mesmo banco;
+- alto volume de escritas;
+- histórico grande;
+- consultas frequentes por polígonos, buffers, interseções e joins espaciais;
+- dashboard público com maior concorrência;
+- necessidade operacional de backup, réplicas, permissões e migrações mais robustas.
+
+Redis/Valkey também não é requisito inicial. Ele entra quando cache em memória ou SQLite deixar de ser suficiente, especialmente se houver várias instâncias ou necessidade de rate limiting compartilhado.
 
 ---
 
@@ -110,10 +137,10 @@ A melhor rota gratuita depende do tipo de MVP:
 
 | Cenário | Melhor opção gratuita | Por quê |
 |--------|------------------------|---------|
-| MCP leve, stateless, sem PostGIS no começo | **Cloudflare Workers** | Free tier generoso, HTTPS automático, baixa latência, bom encaixe com serverless HTTP. |
-| MCP em Python com FastMCP, deploy simples | **Render Free Web Service** | Roda Python/Node diretamente, deploy fácil via GitHub, TLS e logs. Tem cold start por inatividade. |
+| MVP Python leve com SQLite | **Render Free Web Service** | Roda Python/FastMCP diretamente, deploy fácil via GitHub, TLS e logs. Tem cold start e filesystem efêmero, então exige cuidado com persistência. |
+| MCP leve, stateless, sem Python pesado | **Cloudflare Workers** | Free tier generoso, HTTPS automático, baixa latência, bom encaixe com serverless HTTP. |
 | MVP pessoal em Next.js/API routes | **Vercel Hobby** | Bom para frontend e APIs curtas. Atenção a limites de duração e uso não comercial. |
-| Banco Postgres/PostGIS grátis para protótipo | **Neon Free** | Postgres serverless grátis, suporta extensões como PostGIS, bom para dados pequenos/intermitentes. |
+| Banco Postgres/PostGIS grátis para fase posterior | **Neon Free** | Postgres serverless grátis, suporta extensões como PostGIS, bom para dados pequenos/intermitentes quando SQLite não bastar. |
 | Site estático / landing page | **GitHub Pages, Cloudflare Pages ou Vercel** | Gratuito e suficiente para documentação, marketing e página pública. |
 
 ---
@@ -142,7 +169,7 @@ Pontos fortes:
 Limitações para o Sinal Aberto:
 
 - Não é a melhor plataforma para Python geoespacial pesado.
-- D1 é SQLite, não PostGIS.
+- D1 é SQLite gerenciado no ecossistema Cloudflare, mas não é o mesmo fluxo de um arquivo SQLite local em Python.
 - Se a lógica de clustering exigir PostGIS, o banco deve ficar fora do Worker, por exemplo Neon, Supabase ou outro Postgres.
 - O limite de CPU do plano gratuito pode ser apertado para processamento pesado.
 
@@ -150,7 +177,7 @@ Fonte oficial:
 
 - Cloudflare Workers pricing: https://developers.cloudflare.com/workers/platform/pricing/
 
-**Quando usar:** MVP inicial sem PostGIS local, focado em consultar dados, aplicar regras simples e retornar respostas explicáveis.
+**Quando usar:** MVP inicial stateless, sem bibliotecas Python pesadas, focado em consultar dados, aplicar regras simples e retornar respostas explicáveis.
 
 ---
 
@@ -158,7 +185,7 @@ Fonte oficial:
 
 **Avaliação:** melhor opção gratuita para MVP em Python tradicional.
 
-Render Free permite rodar web services em Node.js, Python, Rails etc., além de Postgres e Key Value gratuitos para testes. É simples para começar com FastMCP/FastAPI e deploy via GitHub.
+Render Free permite rodar web services em Node.js, Python, Rails etc. É simples para começar com FastMCP/FastAPI e deploy via GitHub.
 
 Pontos fortes:
 
@@ -166,7 +193,7 @@ Pontos fortes:
 - Deploy simples a partir do GitHub.
 - TLS gerenciado e domínio público.
 - Logs acessíveis.
-- Render oferece Free Web Services, Free Postgres e Free Key Value para testes.
+- Pode usar SQLite no próprio app para desenvolvimento e protótipos pequenos.
 
 Limitações importantes:
 
@@ -175,12 +202,13 @@ Limitações importantes:
 - O filesystem é efêmero.
 - Render Postgres gratuito expira após 30 dias.
 - Não deve ser usado para produção.
+- Se a persistência SQLite precisar sobreviver a deploys/restarts, será necessário volume persistente, banco externo ou outra plataforma.
 
 Fonte oficial:
 
 - Render Free instances: https://render.com/docs/free
 
-**Quando usar:** MVP em Python para validar tools MCP, sem compromisso de disponibilidade contínua.
+**Quando usar:** MVP em Python para validar tools MCP e arquitetura SQLite, sem compromisso de disponibilidade contínua.
 
 ---
 
@@ -211,9 +239,9 @@ Fonte oficial:
 
 ### Opção D — Neon Free para banco
 
-**Avaliação:** boa opção gratuita para Postgres serverless em MVP.
+**Avaliação:** boa opção gratuita para Postgres serverless quando o MVP superar SQLite.
 
-Neon pode ser usado como banco Postgres externo enquanto o MCP roda em Cloudflare Workers, Render, Vercel ou outro host.
+Neon pode ser usado como banco Postgres externo enquanto o MCP roda em Cloudflare Workers, Render, Vercel ou outro host. Na decisão atual, ele não é requisito para o primeiro MVP; é uma rota de migração quando Postgres/PostGIS passar a resolver um problema real.
 
 Pontos fortes:
 
@@ -233,7 +261,7 @@ Fonte oficial:
 
 - Neon pricing: https://neon.com/pricing
 
-**Quando usar:** MVP com dados pequenos, consultas geoespaciais iniciais e necessidade de Postgres/PostGIS sem custo mensal.
+**Quando usar:** fase posterior com dados pequenos, consultas geoespaciais iniciais e necessidade real de Postgres/PostGIS sem custo mensal.
 
 ---
 
@@ -265,45 +293,47 @@ Fonte oficial:
 
 ## Combinações recomendadas para MVP
 
-### MVP gratuito mais realista
+### MVP Python leve recomendado
 
 ```text
 GitHub
   -> repositório e documentação
 
-Cloudflare Workers
-  -> servidor MCP leve em TypeScript
-  -> cache simples em KV ou memória
+Render Free Web Service, Railway Hobby ou VPS barato
+  -> servidor MCP em Python/FastMCP
+  -> SQLite com WAL
+  -> cache em memória ou tabela SQLite
 
-Neon Free
-  -> Postgres/PostGIS pequeno para protótipo
+Volume persistente ou backup periódico
+  -> necessário se o SQLite virar fonte persistente relevante
 
 GitHub Pages / Cloudflare Pages
   -> landing page e documentação pública
 ```
 
-**Por que essa combinação:** custo zero, HTTPS automático, boa latência e Postgres externo com possibilidade de PostGIS.
+**Por que essa combinação:** menor número de serviços, menos segredos, menor superfície operacional e caminho mais direto para validar o produto em Python.
 
-**Trade-off:** exige adaptar o MCP para TypeScript/serverless ou manter a lógica Python fora do Worker.
+**Trade-off:** SQLite depende de disco persistente se os dados não puderem ser reconstruídos. Em free tiers com filesystem efêmero, o banco deve ser reconstruível a partir das fontes externas ou migrado para volume/banco externo.
 
 ---
 
-### MVP gratuito mais simples em Python
+### MVP serverless gratuito
 
 ```text
 GitHub
   -> repositório
 
-Render Free Web Service
-  -> servidor MCP em Python/FastMCP
+Cloudflare Workers
+  -> servidor MCP leve em TypeScript
+  -> cache simples em KV, D1 ou memória
 
-Render Postgres Free ou Neon Free
-  -> banco temporário / banco serverless
+Neon Free, Supabase Free ou D1
+  -> apenas se houver necessidade de persistência gerenciada
 ```
 
-**Por que essa combinação:** caminho mais curto para rodar Python sem DevOps.
+**Por que essa combinação:** custo zero, HTTPS automático e boa latência para um MCP simples.
 
-**Trade-off:** cold start por inatividade; não é produção; banco gratuito do Render expira em 30 dias.
+**Trade-off:** exige adaptar a implementação para TypeScript/serverless ou manter a lógica Python fora do Worker.
 
 ---
 
@@ -315,8 +345,8 @@ GitHub
 
 Railway Hobby ou Render pago básico
   -> servidor MCP Python
-  -> Postgres gerenciado
-  -> Redis/Key Value se necessário
+  -> SQLite com volume persistente no começo
+  -> Postgres/PostGIS e Redis/Key Value se necessário
 
 Cloudflare Pages ou Vercel
   -> site estático / UI pública
@@ -334,9 +364,9 @@ Cloudflare Pages ou Vercel
 |------|---------------|-----------------|---------------|----------|--------------------|
 | GitHub Pages | R$0 | Não | Não | Não | Apenas estático. |
 | Cloudflare Workers | R$0 | Sim, para MVP leve | Limitado | Não local | CPU curta e runtime serverless. |
-| Render Free | R$0 | Sim | Sim | Via Postgres externo ou temporário | Dorme após 15 min; cold start; banco expira. |
+| Render Free | R$0 | Sim | Sim | Via externo, se necessário | Dorme após 15 min; cold start; filesystem efêmero. |
 | Vercel Hobby | R$0 | Parcial | Limitado | Via externo | Funções curtas e uso pessoal/não comercial. |
-| Neon Free | R$0 | Não hospeda MCP | N/A | Sim | Banco pequeno e serverless. |
+| Neon Free | R$0 | Não hospeda MCP | N/A | Sim | Banco pequeno e serverless; usar quando SQLite não bastar. |
 | Railway Free | R$0, crédito baixo | Sim, mas limitado | Sim | Via Postgres | $1/mês de crédito é pouco. |
 | Railway Hobby | US$5/mês | Sim | Sim | Via Postgres | Não é gratuito. |
 | VPS barato | ~US$4-6/mês | Sim | Sim | Sim, instalado por você | Mais DevOps. |
@@ -347,21 +377,21 @@ Cloudflare Pages ou Vercel
 
 Para o Sinal Aberto, a recomendação atual é:
 
-1. **Desenvolvimento local:** Python + FastMCP + `ngrok` para testar no ChatGPT Developer Mode.
-2. **MVP gratuito A:** Cloudflare Workers + Neon Free se o objetivo for validar a experiência com custo zero e lógica leve.
-3. **MVP gratuito B:** Render Free + Neon Free se o objetivo for manter Python/FastMCP desde o início.
+1. **Desenvolvimento local:** Python + FastMCP + SQLite + `ngrok` para testar no ChatGPT Developer Mode.
+2. **MVP Python leve:** Python/FastMCP + SQLite + cache curto, hospedado em Render, Railway ou VPS barato conforme necessidade de persistência.
+3. **MVP serverless gratuito:** Cloudflare Workers + KV/D1 se o objetivo for custo zero e lógica simples em TypeScript.
 4. **Primeiro deploy estável:** Railway Hobby, Render pago ou VPS barato quando houver usuários reais, necessidade de uptime e menos cold start.
-5. **Produção:** Postgres/PostGIS persistente, cache real, logs, métricas, domínio próprio, política de privacidade e revisão de segurança.
+5. **Produção ou escala:** Postgres/PostGIS persistente, Redis/Valkey se necessário, logs, métricas, domínio próprio, política de privacidade e revisão de segurança.
 
 **Decisão para agora:** começar gratuito é possível. A escolha mais pragmática é:
 
 ```text
-MVP Python rápido: Render Free + Neon Free
-MVP serverless gratuito: Cloudflare Workers + Neon Free
+MVP Python leve: Python/FastMCP + SQLite
+MVP serverless gratuito: Cloudflare Workers + KV/D1
 Site/docs: GitHub Pages ou Cloudflare Pages
 ```
 
-Se o MVP confirmar valor, migrar para PaaS pago barato ou VPS com Postgres/PostGIS.
+Se o MVP confirmar valor, migrar para PaaS pago barato ou VPS. Postgres/PostGIS deve entrar quando houver demanda concreta de escala ou geoprocessamento avançado, não como dependência inicial.
 
 ---
 
@@ -408,7 +438,7 @@ O Sinal Aberto precisa de um **backend MCP hospedado em HTTPS**. GitHub é adequ
 
 Para um **MVP gratuito**, há duas rotas boas:
 
-1. **Cloudflare Workers + Neon Free**: melhor para MVP serverless, leve e barato desde o início.
-2. **Render Free + Neon Free**: melhor para manter Python/FastMCP, aceitando cold start e limitações de free tier.
+1. **Python/FastMCP + SQLite**: melhor para validar o produto com baixa complexidade e manter a lógica em Python.
+2. **Cloudflare Workers + KV/D1**: melhor para MVP serverless, leve e barato desde o início, se a implementação puder ser TypeScript/serverless.
 
-Para produção, a stack deve evoluir para PostgreSQL/PostGIS persistente, cache real, logs, métricas, domínio próprio e hospedagem sem cold start relevante.
+Para produção ou escala, a stack pode evoluir para PostgreSQL/PostGIS persistente, Redis/Valkey, logs, métricas, domínio próprio e hospedagem sem cold start relevante.

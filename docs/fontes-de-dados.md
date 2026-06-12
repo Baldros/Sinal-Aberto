@@ -369,6 +369,21 @@ A regra geral do projeto é trabalhar apenas com dados públicos, APIs oficiais 
 5. SINESP/MJSP via downloads públicos.
 6. DATA.RIO apenas para datasets com download/API/serviço geográfico claro.
 
+### Armazenamento no MVP
+
+O MVP deve começar com SQLite, mantendo o banco pequeno, auditável e reconstruível a partir das fontes externas autorizadas.
+
+Uso recomendado:
+
+- armazenar ocorrências recentes normalizadas da API do Fogo Cruzado;
+- guardar metadados de fonte, horário de consulta e horário de última atualização;
+- manter cache curto para reduzir pressão sobre a API externa;
+- salvar clusters recentes já calculados para evitar processamento repetido a cada pergunta;
+- usar índices por data, cidade, bairro, latitude e longitude;
+- filtrar por janela temporal e bounding box antes de aplicar cálculo de distância no Python.
+
+PostgreSQL/PostGIS deve ser adotado depois se houver necessidade de histórico amplo, consultas por polígonos, interseções espaciais, múltiplas instâncias ou dashboard público com maior concorrência.
+
 ### Fase posterior
 
 1. Feeds oficiais de transporte, se disponíveis.

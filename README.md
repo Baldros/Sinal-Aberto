@@ -9,6 +9,8 @@ O projeto nasce com foco em cidades brasileiras com desafios graves de seguranç
 ## Documentos do projeto
 
 - [OpenAI Apps SDK](docs/openai-apps-sdk.md): resumo dos conceitos básicos do SDK oficial da OpenAI, links úteis e caminho sugerido para transformar o Sinal Aberto em app do ChatGPT e servidor MCP aberto.
+- [Stack técnica e hospedagem](docs/stack-e-hospedagem.md): decisão atual de começar com MVP leve em Python/FastMCP + SQLite, mantendo PostgreSQL/PostGIS e Redis como evolução.
+- [Fontes de dados](docs/fontes-de-dados.md): fontes priorizadas, forma de acesso e papel de cada base no produto.
 
 ## Visão do produto
 
@@ -209,6 +211,21 @@ Fonte relevante para camadas urbanas, bases geográficas, bairros, limites terri
 
 ## Arquitetura pretendida
 
+### Decisão de MVP
+
+O MVP inicial deve privilegiar **segurança, leveza e baixo custo operacional**.
+
+Para começar, a arquitetura preferida é:
+
+- servidor MCP em Python com FastMCP;
+- persistência local simples com SQLite;
+- cache curto em memória ou tabela SQLite;
+- consultas à API do Fogo Cruzado por adaptador isolado;
+- score probabilístico e clusterização inicial no código da aplicação;
+- sem login de usuário na primeira versão, se possível.
+
+PostgreSQL/PostGIS e Redis continuam sendo a rota natural de evolução quando houver necessidade real de consultas geoespaciais complexas, maior concorrência, histórico amplo, dashboard público ou múltiplas instâncias escrevendo no mesmo banco.
+
 ### Fase 1: app para ChatGPT
 
 - GPT customizado ou app no ChatGPT.
@@ -219,9 +236,10 @@ Fonte relevante para camadas urbanas, bases geográficas, bairros, limites terri
 ### Fase 2: backend de dados
 
 - Proxy para a API do Fogo Cruzado e fontes complementares.
-- Cache e controle de atualização.
+- Cache leve e controle de atualização.
+- Banco SQLite no MVP, com caminho de migração para PostgreSQL/PostGIS.
 - Normalização geográfica.
-- Detecção de clusters.
+- Detecção de clusters inicialmente no código da aplicação.
 - Cálculo de probabilidade de atividade atual.
 - Cálculo de impacto provável.
 - Logs mínimos e política de privacidade.
@@ -251,10 +269,11 @@ Possíveis ferramentas MCP:
 
 - [ ] Solicitar autorização de uso da API do Fogo Cruzado.
 - [ ] Validar limites, termos de uso, cache, atribuição e possibilidade de uso público.
-- [ ] Criar backend mínimo para consulta de ocorrências recentes.
+- [ ] Criar backend mínimo em Python/FastMCP para consulta de ocorrências recentes.
+- [ ] Definir schema SQLite inicial para ocorrências, clusters e cache.
 - [ ] Mapear campos relevantes da API.
 - [ ] Definir primeira versão do score probabilístico.
-- [ ] Implementar agrupamento por clusters temporais e geográficos.
+- [ ] Implementar agrupamento por clusters temporais e geográficos no código da aplicação.
 - [ ] Criar respostas explicáveis em linguagem natural.
 - [ ] Construir protótipo como app/GPT do ChatGPT.
 - [ ] Documentar limitações, política de privacidade e disclaimers.
