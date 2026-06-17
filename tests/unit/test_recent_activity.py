@@ -259,3 +259,79 @@ async def test_get_recent_activity_sinaliza_proxima_pagina() -> None:
     )
     result = await ra.get_recent_activity(client, city="Rio de Janeiro", time_window="24h")
     assert any("mais recentes" in limit for limit in result.limitations)
+
+
+async def test_get_recent_activity_casa_cidade_com_acento() -> None:
+    # Catalogo com acento; consulta sem acento deve casar (slugify).
+    client = FakeClient(
+        cities=[_city(name="São Gonçalo", city_id="sg")],
+        occurrences=[_occ(30)],
+    )
+    result = await ra.get_recent_activity(client, city="sao goncalo", time_window="6h")
+    assert client.occurrence_calls[0]["idCities"] == "sg"
+    assert result.occurrence_count == 1
+
+
+# -- enriquecimento territorial (Tier 1 / IBGE) -----------------------
+
+
+class FakeTerritory:
+    """Substitui IbgeLocalidadesClient: devolve municipios canned ou falha."""
+
+    def __init__(self, municipios=None, *, fail: bool = False) -> None:
+        self._municipios = municipios or []
+        self._fail = fail
+
+    async def get_municipios(self):
+        if self._fail:
+            raise RuntimeError("ibge fora do ar")
+        return self._municipios
+
+
+def _muni_rio():
+    return {
+        "id": 3304557,
+        "nome": "Rio de Janeiro",
+        "microrregiao": {
+            "mesorregiao": {
+                "UF": {"sigla": "RJ", "nome": "Rio de Janeiro", "regiao": {"nome": "Sudeste"}}
+            }
+        },
+    }
+
+
+async def test_enriquece_com_contexto_territorial() -> None:
+    client = FakeClient(cities=[_city()], occurrences=[_occ(30)])
+    territory = FakeTerritory([_muni_rio()])
+    result = await ra.get_recent_activity(
+        client, city="Rio de Janeiro", time_window="6h", territory=territory
+    )
+
+    ctx = result.territorial_context
+    assert ctx is not None
+    assert ctx.ibge_city_code == 3304557
+    assert ctx.uf == "RJ"
+    assert ctx.macro_region == "Sudeste"
+    assert ctx.match_quality == "exato"
+    # a fonte IBGE entra na lista de fontes atribuidas
+    assert any(s.name == "IBGE Localidades" for s in result.sources)
+
+
+async def test_territorio_indisponivel_degrada_sem_quebrar() -> None:
+    client = FakeClient(cities=[_city()], occurrences=[_occ(30)])
+    territory = FakeTerritory(fail=True)
+    result = await ra.get_recent_activity(
+        client, city="Rio de Janeiro", time_window="6h", territory=territory
+    )
+
+    # a resposta principal nao quebra; so registra a limitacao
+    assert result.occurrence_count == 1
+    assert result.territorial_context is None
+    assert any("IBGE" in limit for limit in result.limitations)
+    assert not any(s.name == "IBGE Localidades" for s in result.sources)
+
+
+async def test_sem_territorio_nao_enriquece() -> None:
+    client = FakeClient(cities=[_city()], occurrences=[_occ(30)])
+    result = await ra.get_recent_activity(client, city="Rio de Janeiro", time_window="6h")
+    assert result.territorial_context is None

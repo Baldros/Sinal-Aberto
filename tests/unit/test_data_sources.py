@@ -16,16 +16,21 @@ class _ProbeFail:
         raise FogoCruzadoError("indisponivel")
 
 
-async def test_lista_fonte_principal_operacional() -> None:
-    result = await list_data_sources(_ProbeOK())
+async def test_lista_fontes_integradas_operacionais() -> None:
+    result = await list_data_sources(_ProbeOK(), territory=_ProbeOK())
 
     fogo = result.sources[0]
     assert fogo.name == "Fogo Cruzado"
     assert fogo.status == "operacional"
     assert fogo.last_update_time == datetime(2026, 6, 17, 10, 0, tzinfo=timezone.utc)
-    # 1 principal + 8 auxiliares
+
+    ibge = result.sources[1]
+    assert ibge.name == "IBGE Localidades"
+    assert ibge.status == "operacional"
+
+    # 2 integradas (Fogo Cruzado + IBGE) + 7 auxiliares
     assert len(result.sources) == 9
-    assert all(s.status == "validada, nao integrada" for s in result.sources[1:])
+    assert all(s.status == "validada, nao integrada" for s in result.sources[2:])
 
 
 async def test_marca_indisponivel_quando_probe_falha() -> None:
@@ -37,7 +42,15 @@ async def test_marca_indisponivel_quando_probe_falha() -> None:
     assert any("sondagem de saude" in limit for limit in result.limitations)
 
 
+async def test_ibge_indisponivel_quando_probe_falha() -> None:
+    result = await list_data_sources(_ProbeOK(), territory=_ProbeFail())
+
+    ibge = next(s for s in result.sources if s.name == "IBGE Localidades")
+    assert ibge.status == "indisponivel"
+    assert any("IBGE Localidades nao respondeu" in limit for limit in result.limitations)
+
+
 async def test_cor_rio_carrega_limitacao_de_headers() -> None:
-    result = await list_data_sources(_ProbeOK())
+    result = await list_data_sources(_ProbeOK(), territory=_ProbeOK())
     cor = next(s for s in result.sources if s.name == "COR.Rio")
     assert any("headers de navegador" in limit for limit in cor.known_limitations)
