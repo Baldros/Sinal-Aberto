@@ -41,6 +41,21 @@ class RecentOccurrence(BaseModel):
     transport_interrupted: bool = False
 
 
+class TerritorialContext(BaseModel):
+    """Normalizacao territorial oficial (IBGE) da cidade consultada.
+
+    Enriquecimento descritivo: nao altera evidencia nem confianca. Fornece o
+    codigo IBGE de 7 digitos, chave de juncao com as fontes historicas.
+    """
+
+    ibge_city_code: int | None = None
+    resolved_name: str | None = None  # nome canonico do municipio (IBGE)
+    uf: str | None = None  # sigla, ex.: "RJ"
+    macro_region: str | None = None  # ex.: "Sudeste"
+    population: int | None = None  # reservado; preenchido offline (SIDRA)
+    match_quality: str  # "exato" | "aproximado" | "ambiguo"
+
+
 class RecentActivityResult(BaseModel):
     """Resultado de `get_recent_activity`."""
 
@@ -54,6 +69,7 @@ class RecentActivityResult(BaseModel):
     activity_summary: str
     evidence_level: str
     confidence_level: str
+    territorial_context: TerritorialContext | None = None
     recent_occurrences: list[RecentOccurrence] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
     sources: list[SourceRef] = Field(default_factory=list)

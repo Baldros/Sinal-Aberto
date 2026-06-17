@@ -10,17 +10,12 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from ..adapters.fogocruzado import FogoCruzadoClient
+from ..adapters.ibge import IbgeLocalidadesClient
 from ..models import DataSourcesResult, DataSourceStatus
 
 # Catalogo estatico das fontes auxiliares validadas mas ainda nao integradas.
+# O IBGE Localidades saiu desta lista: foi promovido a fonte integrada (Tier 1).
 _SECONDARY: tuple[dict, ...] = (
-    {
-        "name": "IBGE Localidades",
-        "role": "normalizacao territorial oficial",
-        "access_type": "API REST JSON",
-        "coverage": "Brasil",
-        "known_limitations": ["Validada; ainda nao usada nas respostas."],
-    },
     {
         "name": "IBGE Malhas",
         "role": "geometrias oficiais",
@@ -95,11 +90,15 @@ _SECONDARY: tuple[dict, ...] = (
 )
 
 
-async def list_data_sources(client: FogoCruzadoClient) -> DataSourcesResult:
+async def list_data_sources(
+    client: FogoCruzadoClient,
+    territory: IbgeLocalidadesClient | None = None,
+) -> DataSourcesResult:
     query_time = datetime.now(timezone.utc)
     limitations = [
-        "Apenas o Fogo Cruzado esta integrado as respostas; as demais fontes "
-        "estao validadas mas ainda nao sao consultadas em tempo real."
+        "Integradas as respostas: Fogo Cruzado (ocorrencias) e IBGE Localidades "
+        "(normalizacao territorial). As demais fontes estao validadas mas ainda "
+        "nao sao consultadas em tempo real."
     ]
 
     try:
@@ -127,6 +126,32 @@ async def list_data_sources(client: FogoCruzadoClient) -> DataSourcesResult:
             ],
         )
     ]
+
+    ibge_status = "integrada"
+    if territory is not None:
+        try:
+            await territory.probe()
+            ibge_status = "operacional"
+        except Exception:  # noqa: BLE001 - qualquer falha vira status indisponivel
+            ibge_status = "indisponivel"
+            limitations.append(
+                "IBGE Localidades nao respondeu a sondagem de saude no momento da consulta."
+            )
+    sources.append(
+        DataSourceStatus(
+            name="IBGE Localidades",
+            role="normalizacao territorial oficial (Tier 1)",
+            access_type="API REST JSON",
+            status=ibge_status,
+            coverage="Brasil",
+            last_query_time=query_time,
+            known_limitations=[
+                "Enriquecimento descritivo: resolve codigo IBGE/UF/macrorregiao, "
+                "nao altera evidencia nem confianca.",
+            ],
+        )
+    )
+
     for source in _SECONDARY:
         sources.append(DataSourceStatus(status="validada, nao integrada", **source))
 

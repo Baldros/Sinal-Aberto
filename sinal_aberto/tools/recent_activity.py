@@ -13,9 +13,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from ..adapters.fogocruzado import FogoCruzadoClient
-from ..models import RecentActivityResult, RecentOccurrence, SourceRef
+from ..adapters.ibge import IbgeLocalidadesClient
+from ..models import RecentActivityResult, RecentOccurrence, SourceRef, TerritorialContext
+from .territory import resolve_territory, slugify
 
 FONTE_URL = "https://api.fogocruzado.org.br/"
+IBGE_URL = "https://servicodados.ibge.gov.br/api/v1/localidades"
 MAX_WINDOW = timedelta(days=7)
 MAX_FETCH = 50
 _WINDOW_RE = re.compile(r"^\s*(\d+)\s*([mhd])\s*$", re.IGNORECASE)
@@ -123,12 +126,59 @@ def _assess(
     return evidence, confidence, summary
 
 
+async def _resolve_territory(
+    territory: IbgeLocalidadesClient | None,
+    *,
+    name: str,
+    uf: str | None,
+    query_time: datetime,
+    sources: list[SourceRef],
+    limitations: list[str],
+) -> TerritorialContext | None:
+    """Enriquecimento territorial (IBGE), isolado e tolerante a falha.
+
+    Falha ou ausencia da fonte vira campo nulo + limitacao; nunca quebra a tool.
+    E descritivo: nao altera evidencia nem confianca.
+    """
+    if territory is None:
+        return None
+    try:
+        municipios = await territory.get_municipios()
+    except Exception:  # noqa: BLE001 - normalizacao e opcional; degrada sem quebrar
+        limitations.append(
+            "Normalizacao territorial (IBGE) indisponivel; codigo oficial nao resolvido."
+        )
+        return None
+
+    context = resolve_territory(municipios, name, uf=uf)
+    if context is None:
+        limitations.append(
+            "Nao foi possivel resolver o codigo IBGE oficial para a cidade consultada."
+        )
+        return None
+
+    sources.append(
+        SourceRef(
+            name="IBGE Localidades",
+            access_type="API REST JSON",
+            queried_at=query_time,
+            url=IBGE_URL,
+        )
+    )
+    if context.match_quality == "ambiguo":
+        limitations.append(
+            "Normalizacao territorial ambigua; verifique a UF do municipio resolvido."
+        )
+    return context
+
+
 async def get_recent_activity(
     client: FogoCruzadoClient,
     *,
     city: str,
     region: str | None = None,
     time_window: str = "1h",
+    territory: IbgeLocalidadesClient | None = None,
 ) -> RecentActivityResult:
     query_time = datetime.now(timezone.utc)
     window, window_label, ok = _parse_window(time_window)
@@ -152,10 +202,10 @@ async def get_recent_activity(
     ]
 
     cities = await client.get_cities()
-    normalized_city = city.strip().casefold()
-    exact = [c for c in cities if (c.get("name") or "").casefold() == normalized_city]
+    normalized_city = slugify(city)
+    exact = [c for c in cities if slugify(c.get("name")) == normalized_city]
     matches = exact or [
-        c for c in cities if normalized_city in (c.get("name") or "").casefold()
+        c for c in cities if normalized_city in slugify(c.get("name"))
     ]
 
     if not matches:
@@ -184,6 +234,15 @@ async def get_recent_activity(
         )
 
     target = matches[0]
+    territorial_context = await _resolve_territory(
+        territory,
+        name=_label(target.get("name")) or city,
+        uf=_label(target.get("state")),
+        query_time=query_time,
+        sources=sources,
+        limitations=limitations,
+    )
+
     params: dict[str, Any] = {
         "page": 1,
         "take": MAX_FETCH,
@@ -253,6 +312,7 @@ async def get_recent_activity(
         activity_summary=summary,
         evidence_level=evidence,
         confidence_level=confidence,
+        territorial_context=territorial_context,
         recent_occurrences=recent,
         limitations=limitations,
         sources=sources,

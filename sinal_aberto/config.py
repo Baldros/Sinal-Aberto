@@ -16,6 +16,7 @@ from dotenv import dotenv_values, find_dotenv
 from pydantic import BaseModel
 
 DEFAULT_BASE_URL = "https://api-service.fogocruzado.org.br/api/v2"
+DEFAULT_IBGE_BASE_URL = "https://servicodados.ibge.gov.br/api/v1/localidades"
 
 # Nomes lidos de os.environ (especificos, sem risco de colisao).
 _EMAIL_ENV_NAMES = (
@@ -34,9 +35,12 @@ class Settings(BaseModel):
     fogocruzado_email: str
     fogocruzado_password: str
     fogocruzado_base_url: str = DEFAULT_BASE_URL
+    ibge_base_url: str = DEFAULT_IBGE_BASE_URL
     http_timeout: float = 20.0
     occurrences_cache_ttl: float = 60.0
     catalog_cache_ttl: float = 300.0
+    # A malha municipal do IBGE quase nao muda; cache longo (1 dia).
+    ibge_cache_ttl: float = 86_400.0
     host: str = "127.0.0.1"
     port: int = 8000
 
@@ -70,11 +74,17 @@ def get_settings() -> Settings:
         or file_values.get("FOGOCRUZADO_API_BASE_URL")
         or DEFAULT_BASE_URL
     )
+    ibge_base_url = (
+        os.getenv("IBGE_API_BASE_URL")
+        or file_values.get("IBGE_API_BASE_URL")
+        or DEFAULT_IBGE_BASE_URL
+    )
 
     return Settings(
         fogocruzado_email=email,
         fogocruzado_password=password,
         fogocruzado_base_url=base_url,
+        ibge_base_url=ibge_base_url,
         host=os.getenv("SINAL_ABERTO_HOST", "127.0.0.1"),
         port=int(os.getenv("SINAL_ABERTO_PORT", "8000")),
     )

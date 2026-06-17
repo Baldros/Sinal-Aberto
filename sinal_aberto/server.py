@@ -14,6 +14,7 @@ from __future__ import annotations
 from fastmcp import FastMCP
 
 from .adapters.fogocruzado import FogoCruzadoClient
+from .adapters.ibge import IbgeLocalidadesClient
 from .config import get_settings
 from .models import DataSourcesResult, RecentActivityResult
 from .tools.data_sources import list_data_sources as _list_data_sources
@@ -30,6 +31,7 @@ mcp = FastMCP(
 )
 
 _client: FogoCruzadoClient | None = None
+_ibge_client: IbgeLocalidadesClient | None = None
 
 
 def _get_client() -> FogoCruzadoClient:
@@ -44,6 +46,18 @@ def _get_client() -> FogoCruzadoClient:
             catalog_ttl=settings.catalog_cache_ttl,
         )
     return _client
+
+
+def _get_ibge_client() -> IbgeLocalidadesClient:
+    global _ibge_client
+    if _ibge_client is None:
+        settings = get_settings()
+        _ibge_client = IbgeLocalidadesClient(
+            base_url=settings.ibge_base_url,
+            timeout=settings.http_timeout,
+            catalog_ttl=settings.ibge_cache_ttl,
+        )
+    return _ibge_client
 
 
 @mcp.tool
@@ -64,7 +78,11 @@ async def get_recent_activity(
     coordenadas exatas), fonte, horario de consulta/atualizacao e limitacoes.
     """
     return await _get_recent_activity(
-        _get_client(), city=city, region=region, time_window=time_window
+        _get_client(),
+        city=city,
+        region=region,
+        time_window=time_window,
+        territory=_get_ibge_client(),
     )
 
 
@@ -72,11 +90,11 @@ async def get_recent_activity(
 async def list_data_sources() -> DataSourcesResult:
     """Lista as fontes de dados do Sinal Aberto e seu estado operacional.
 
-    O Fogo Cruzado e marcado como fonte principal, com sondagem de saude ao vivo;
-    as demais fontes auxiliares aparecem como validadas e ainda nao integradas,
-    conforme o estado real do sistema.
+    O Fogo Cruzado e o IBGE Localidades sao marcados como integrados, com sondagem
+    de saude ao vivo; as demais fontes auxiliares aparecem como validadas e ainda
+    nao integradas, conforme o estado real do sistema.
     """
-    return await _list_data_sources(_get_client())
+    return await _list_data_sources(_get_client(), territory=_get_ibge_client())
 
 
 def main() -> None:
