@@ -406,3 +406,41 @@ async def test_corroboration_unavailable_adds_limitation() -> None:
     )
     assert result.corroborating_reports == []
     assert any("COR.Rio corroboration unavailable" in limit for limit in result.limitations)
+
+
+# -- operation profile (Tier 2a, descriptive) --------------------------
+
+
+async def test_operation_profile_aggregates_and_stays_phase_a() -> None:
+    client = FakeClient(
+        cities=[_city()],
+        occurrences=[
+            _occ(
+                10, latitude=-22.90, longitude=-43.20,
+                contextInfo={"mainReason": {"name": "Op"}, "massacre": True,
+                             "policeUnit": {"name": "BOPE"}},
+            ),
+            _occ(
+                20, latitude=-22.901, longitude=-43.20,
+                contextInfo={"mainReason": {"name": "Op"}, "policeUnit": {"name": "UPP"}},
+            ),
+        ],
+    )
+    result = await ra.get_recent_activity(client, city="Rio de Janeiro", time_window="6h")
+
+    prof = result.operation_profile
+    assert prof is not None
+    assert prof.massacre_flagged is True
+    assert prof.distinct_police_units == 2
+    assert prof.spatial_concentration == "concentrated"
+    assert prof.recency_signal == "very recent"
+    assert result.recent_occurrences[0].massacre is True
+    # Phase A: enrichment must not change the assessment (2 fresh occurrences).
+    assert result.evidence_level == "high evidence"
+    assert result.confidence_level == "medium"
+
+
+async def test_operation_profile_absent_without_occurrences() -> None:
+    client = FakeClient(cities=[_city()], occurrences=[])
+    result = await ra.get_recent_activity(client, city="Rio de Janeiro", time_window="1h")
+    assert result.operation_profile is None
