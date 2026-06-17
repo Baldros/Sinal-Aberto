@@ -15,8 +15,9 @@ from fastmcp import FastMCP
 from .adapters.fogocruzado import FogoCruzadoClient
 from .adapters.ibge import IbgeLocalidadesClient
 from .config import get_settings
-from .models import DataSourcesResult, RecentActivityResult
+from .models import DataSourcesResult, LocationResolution, RecentActivityResult
 from .tools.data_sources import list_data_sources as _list_data_sources
+from .tools.locations import resolve_location as _resolve_location
 from .tools.recent_activity import get_recent_activity as _get_recent_activity
 
 mcp = FastMCP(
@@ -30,8 +31,10 @@ mcp = FastMCP(
         "neighborhood and time window). The server resolves all official "
         "identifiers internally; never invent or pass numeric codes.\n"
         "- Read territorial_context.match_quality. If it is 'ambiguous', the city "
-        "name maps to more than one municipality: ask the user for the state (UF) "
-        "and query again before trusting the result.\n"
+        "name maps to more than one municipality: call resolve_location to list the "
+        "candidates, ask the user for the state (UF), and query again.\n"
+        "- Use resolve_location whenever a place name may be ambiguous, to turn a "
+        "name into the official municipality before querying activity.\n"
         "- evidence_level (how much signal) and confidence_level (how sure) are "
         "independent; never conflate them.\n"
         "- Always relay the 'limitations' to the user, and cite the sources.\n"
@@ -90,8 +93,8 @@ async def get_recent_activity(
     Agent guidance:
     - Pass a human city name; the server resolves official identifiers internally.
       Never invent or pass numeric codes.
-    - Check territorial_context.match_quality. If "ambiguous", ask the user for the
-      state (UF) and call again before trusting the result.
+    - Check territorial_context.match_quality. If "ambiguous", call resolve_location
+      to list candidates, ask the user for the state (UF), and call again.
     - evidence_level (how much signal) and confidence_level (how sure) are
       independent. Always relay 'limitations' to the user.
     - Express evidence and uncertainty, never certainty. Do not provide routes,
@@ -109,6 +112,29 @@ async def get_recent_activity(
         time_window=time_window,
         territory=_get_ibge_client(),
     )
+
+
+@mcp.tool(annotations={"readOnlyHint": True, "openWorldHint": True})
+async def resolve_location(name: str, uf: str | None = None) -> LocationResolution:
+    """Resolve a Brazilian city name to its official IBGE municipality candidates.
+
+    Lookup-only: it does not return activity data, just the official identity of a
+    place so you can disambiguate before calling get_recent_activity.
+
+    Agent guidance:
+    - Use this when a city name might be ambiguous, or when get_recent_activity
+      returns territorial_context.match_quality "ambiguous".
+    - If status is "ambiguous", show the candidates to the user or pass 'uf' (the
+      state) and call again; do not guess.
+    - Codes are resolved live. Pass the city name (and state) onward to other
+      tools, never a hardcoded code.
+
+    Args:
+        name: City name to resolve, for example "Bom Jesus".
+        uf: Optional state to disambiguate, abbreviation or name, e.g. "RS" or
+            "Rio Grande do Sul".
+    """
+    return await _resolve_location(_get_ibge_client(), name=name, uf=uf)
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "openWorldHint": True})

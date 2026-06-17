@@ -51,31 +51,51 @@ def _matches_uf(municipality: dict[str, Any], uf_slug: str) -> bool:
     )
 
 
-def _to_context(municipality: dict[str, Any], match_quality: str) -> TerritorialContext:
+def _municipality_code(municipality: dict[str, Any]) -> int | None:
     code = municipality.get("id")
+    if isinstance(code, int):
+        return code
+    if isinstance(code, str) and code.isdigit():
+        return int(code)
+    return None
+
+
+def municipality_summary(municipality: dict[str, Any]) -> dict[str, Any]:
+    """Compact, agent-friendly view of one IBGE municipality."""
+    return {
+        "ibge_city_code": _municipality_code(municipality),
+        "name": municipality.get("nome"),
+        "uf": _uf_abbreviation(municipality),
+        "macro_region": _macro_region(municipality),
+    }
+
+
+def _to_context(municipality: dict[str, Any], match_quality: str) -> TerritorialContext:
+    summary = municipality_summary(municipality)
     return TerritorialContext(
-        ibge_city_code=int(code) if isinstance(code, int) or str(code).isdigit() else None,
-        resolved_name=municipality.get("nome"),
-        uf=_uf_abbreviation(municipality),
-        macro_region=_macro_region(municipality),
+        ibge_city_code=summary["ibge_city_code"],
+        resolved_name=summary["name"],
+        uf=summary["uf"],
+        macro_region=summary["macro_region"],
         match_quality=match_quality,
     )
 
 
-def resolve_territory(
+def find_candidates(
     municipalities: list[dict[str, Any]],
     name: str,
     uf: str | None = None,
-) -> TerritorialContext | None:
-    """Resolve a city inside the IBGE municipality catalog.
+) -> tuple[list[dict[str, Any]], str]:
+    """Find municipalities matching a name, narrowed by state when given.
 
-    Strategy: exact slug match first; if a state abbreviation or name is
-    available, use it to disambiguate. Without an exact match, fall back to a
-    substring match. Multiple unresolved matches are reported as ambiguous.
+    Returns (matches, tier) where tier is "exact", "approximate", or "none".
+    Exact slug matches win; otherwise substring matches are returned. A state
+    (abbreviation or name) narrows either pass only when it leaves something.
+    Callers decide how to treat multiple matches.
     """
     target = slugify(name)
     if not target:
-        return None
+        return [], "none"
     uf_slug = slugify(uf)
 
     exact = [m for m in municipalities if slugify(m.get("nome")) == target]
@@ -83,18 +103,32 @@ def resolve_territory(
         narrowed = [m for m in exact if _matches_uf(m, uf_slug)]
         if narrowed:
             exact = narrowed
-    if len(exact) == 1:
-        return _to_context(exact[0], "exact")
-    if len(exact) > 1:
-        return _to_context(exact[0], "ambiguous")
+    if exact:
+        return exact, "exact"
 
     approx = [m for m in municipalities if target in slugify(m.get("nome"))]
     if uf_slug:
         narrowed = [m for m in approx if _matches_uf(m, uf_slug)]
         if narrowed:
             approx = narrowed
-    if len(approx) >= 1:
-        quality = "approximate" if len(approx) == 1 else "ambiguous"
-        return _to_context(approx[0], quality)
+    if approx:
+        return approx, "approximate"
 
-    return None
+    return [], "none"
+
+
+def resolve_territory(
+    municipalities: list[dict[str, Any]],
+    name: str,
+    uf: str | None = None,
+) -> TerritorialContext | None:
+    """Resolve a city to a single best IBGE municipality.
+
+    Thin wrapper over find_candidates: returns the first match, labelling it
+    "ambiguous" when more than one remains, or None when nothing matches.
+    """
+    matches, tier = find_candidates(municipalities, name, uf)
+    if not matches:
+        return None
+    quality = "ambiguous" if len(matches) > 1 else ("exact" if tier == "exact" else "approximate")
+    return _to_context(matches[0], quality)

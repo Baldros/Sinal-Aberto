@@ -23,6 +23,7 @@ EvidenceLevel = Literal[
 ]
 ConfidenceLevel = Literal["low", "medium", "high"]
 MatchQuality = Literal["exact", "approximate", "ambiguous"]
+ResolutionStatus = Literal["resolved", "ambiguous", "approximate", "not_found"]
 SourceState = Literal[
     "operational",
     "unavailable",
@@ -121,6 +122,54 @@ class TerritorialContext(BaseModel):
             '"ambiguous": the name maps to more than one municipality. If "ambiguous", '
             "ask the user for the state (UF) and query again before trusting the city."
         )
+    )
+
+
+class LocationCandidate(BaseModel):
+    """One municipality that matched a location lookup."""
+
+    ibge_city_code: int | None = Field(
+        default=None, description="Official 7-digit IBGE municipality code, resolved live."
+    )
+    name: str | None = Field(default=None, description="Canonical municipality name (IBGE).")
+    uf: str | None = Field(
+        default=None, description='State abbreviation (UF), e.g. "RJ".'
+    )
+    macro_region: str | None = Field(
+        default=None, description='Brazilian macro-region, e.g. "Sudeste".'
+    )
+
+
+class LocationResolution(BaseModel):
+    """Result returned by `resolve_location`.
+
+    A lookup-only tool: it turns a human city name into official IBGE
+    candidates so the agent can disambiguate before querying activity. Codes are
+    resolved live; pass the city name onward to other tools, not the code.
+    """
+
+    query: str = Field(description="The city name as requested.")
+    uf_filter: str | None = Field(
+        default=None, description="State hint applied to narrow the search, if any."
+    )
+    status: ResolutionStatus = Field(
+        description=(
+            '"resolved": one confident match (use candidates[0]). '
+            '"ambiguous": several municipalities share the name—ask the user for the '
+            "state (UF) and call again with uf, or let the user pick a candidate. "
+            '"approximate": a single partial match—confirm it is the intended city. '
+            '"not_found": nothing matched—check the spelling.'
+        )
+    )
+    candidates: list[LocationCandidate] = Field(
+        default_factory=list, description="Matching municipalities, best-effort ordered."
+    )
+    query_time: datetime = Field(description="UTC time this lookup was executed.")
+    limitations: list[str] = Field(
+        default_factory=list, description="Caveats about this lookup; relay to the user."
+    )
+    sources: list[SourceRef] = Field(
+        default_factory=list, description="Attribution for the source consulted."
     )
 
 
