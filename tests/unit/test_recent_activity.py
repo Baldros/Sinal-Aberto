@@ -336,3 +336,73 @@ async def test_without_territory_does_not_enrich() -> None:
     client = FakeClient(cities=[_city()], occurrences=[_occ(30)])
     result = await ra.get_recent_activity(client, city="Rio de Janeiro", time_window="6h")
     assert result.territorial_context is None
+
+
+# -- COR.Rio corroboration (Tier 3, descriptive) -----------------------
+
+
+class FakeCorroboration:
+    """Substitutes CorRioClient: returns canned posts or fails."""
+
+    def __init__(self, posts=None, *, fail: bool = False) -> None:
+        self._posts = posts or []
+        self._fail = fail
+
+    async def get_recent_posts(self):
+        if self._fail:
+            raise RuntimeError("cor.rio down")
+        return self._posts
+
+
+def _cor_post(title: str = "Operação policial na Penha", excerpt: str = "Confronto na Penha"):
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+    return {
+        "title": {"rendered": title},
+        "excerpt": {"rendered": excerpt},
+        "date_gmt": now,
+        "link": "https://cor.rio/x",
+    }
+
+
+async def test_corroboration_enriches_for_rio() -> None:
+    client = FakeClient(cities=[_city()], occurrences=[_occ(30)])  # Rio, Penha
+    result = await ra.get_recent_activity(
+        client, city="Rio de Janeiro", time_window="6h",
+        corroboration=FakeCorroboration([_cor_post()]),
+    )
+    assert len(result.corroborating_reports) == 1
+    assert result.corroborating_reports[0].area == "penha"
+    assert any(s.name == "COR.Rio" for s in result.sources)
+    assert any("do not confirm" in limit for limit in result.limitations)
+
+
+async def test_corroboration_skipped_for_non_rio() -> None:
+    client = FakeClient(cities=[_city(name="Recife")], occurrences=[_occ(30)])
+    result = await ra.get_recent_activity(
+        client, city="Recife", time_window="6h",
+        corroboration=FakeCorroboration([_cor_post()]),
+    )
+    assert result.corroborating_reports == []
+    assert not any(s.name == "COR.Rio" for s in result.sources)
+
+
+async def test_corroboration_drops_non_security_bulletin() -> None:
+    client = FakeClient(cities=[_city()], occurrences=[_occ(30)])  # Rio, Penha
+    result = await ra.get_recent_activity(
+        client, city="Rio de Janeiro", time_window="6h",
+        corroboration=FakeCorroboration(
+            [_cor_post(title="Manutenção na Penha", excerpt="Obras na via")]
+        ),
+    )
+    assert result.corroborating_reports == []
+    assert not any(s.name == "COR.Rio" for s in result.sources)
+
+
+async def test_corroboration_unavailable_adds_limitation() -> None:
+    client = FakeClient(cities=[_city()], occurrences=[_occ(30)])
+    result = await ra.get_recent_activity(
+        client, city="Rio de Janeiro", time_window="6h",
+        corroboration=FakeCorroboration(fail=True),
+    )
+    assert result.corroborating_reports == []
+    assert any("COR.Rio corroboration unavailable" in limit for limit in result.limitations)
