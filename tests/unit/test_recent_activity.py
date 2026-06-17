@@ -7,6 +7,7 @@ import pytest
 
 from sinal_aberto.models import RecentOccurrence
 from sinal_aberto.tools import recent_activity as ra
+from sinal_aberto.tools.baseline import BaselineStore
 
 
 # -- fixture helpers ----------------------------------------------------
@@ -444,3 +445,49 @@ async def test_operation_profile_absent_without_occurrences() -> None:
     client = FakeClient(cities=[_city()], occurrences=[])
     result = await ra.get_recent_activity(client, city="Rio de Janeiro", time_window="1h")
     assert result.operation_profile is None
+
+
+# -- historical baseline (Tier 2b, ISP) --------------------------------
+
+
+_BASELINE_DATA = {
+    "meta": {"source": "ISP Dados RJ", "as_of": "2026-05",
+             "typical_window": "12 months ending 2026-05",
+             "recent_window": "6 months ending 2026-05"},
+    "municipalities": {
+        "3304557": {
+            "name": "Rio de Janeiro", "population": 6_730_729,
+            "police_lethality": {"typical_monthly": 37.8, "recent_monthly": 33.0,
+                                 "per_100k_annual": 6.75, "percentile": 0.956},
+            "violent_lethality": {"typical_monthly": 128.0, "recent_monthly": 126.5,
+                                  "per_100k_annual": 22.84, "percentile": 0.62},
+            "relative_level": "typical",
+        }
+    },
+}
+
+
+async def test_historical_baseline_enriches_for_mapped_city() -> None:
+    client = FakeClient(cities=[_city()], occurrences=[_occ(30)])
+    result = await ra.get_recent_activity(
+        client, city="Rio de Janeiro", time_window="6h",
+        territory=FakeTerritory([_muni_rio()]),
+        baseline=BaselineStore(data=_BASELINE_DATA),
+    )
+    base = result.historical_baseline
+    assert base is not None
+    assert base.ibge_city_code == 3304557
+    assert base.relative_level == "typical"
+    assert base.police_lethality.percentile == 0.956
+    assert any(s.name == "ISP Dados RJ" for s in result.sources)
+    # Phase A: the baseline must not change the live assessment.
+    assert result.evidence_level == "moderate evidence"
+
+
+async def test_historical_baseline_absent_without_territory() -> None:
+    client = FakeClient(cities=[_city()], occurrences=[_occ(30)])
+    result = await ra.get_recent_activity(
+        client, city="Rio de Janeiro", time_window="6h",
+        baseline=BaselineStore(data=_BASELINE_DATA),
+    )
+    assert result.historical_baseline is None
