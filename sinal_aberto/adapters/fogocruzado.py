@@ -55,11 +55,14 @@ class FogoCruzadoClient:
         password: str,
         timeout: float = 20.0,
         catalog_ttl: float = 300.0,
+        transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self._email = email
         self._password = password
         self._catalog_ttl = catalog_ttl
-        self._client = httpx.AsyncClient(base_url=base_url.rstrip("/"), timeout=timeout)
+        self._client = httpx.AsyncClient(
+            base_url=base_url.rstrip("/"), timeout=timeout, transport=transport
+        )
         self._token: str | None = None
         self._token_expiry = 0.0
         self._auth_lock = asyncio.Lock()
