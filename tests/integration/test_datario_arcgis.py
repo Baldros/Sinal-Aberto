@@ -1,8 +1,8 @@
-"""Teste de conexao: DATA.RIO (ArcGIS REST / FeatureServer).
+"""Connection test: DATA.RIO (ArcGIS REST / FeatureServer).
 
-Fonte auxiliar de camadas urbanas do municipio do Rio. Validada em
-docs/validacao-fontes-secundarias.md (2026-06-12). Acesso por dataset; aqui
-testamos a camada de Limite de Bairros. Sem autenticacao.
+Auxiliary source for urban layers in Rio de Janeiro city. Validated in
+docs/validacao-fontes-secundarias.md (2026-06-12). Access is dataset-based;
+this file tests the neighborhood-boundary layer. No authentication.
 """
 
 import httpx
@@ -17,21 +17,21 @@ LAYER_URL = (
 )
 
 
-def test_metadados_da_camada_de_bairros(http_client: httpx.Client) -> None:
+def test_neighborhood_layer_metadata(http_client: httpx.Client) -> None:
     response = http_client.get(LAYER_URL, params={"f": "json"})
 
     assert response.status_code == 200, (
-        f"ArcGIS DATA.RIO respondeu status={response.status_code}"
+        f"ArcGIS DATA.RIO returned status={response.status_code}"
     )
     payload = response.json()
-    # O ArcGIS sinaliza erro com HTTP 200 + chave "error".
-    assert "error" not in payload, f"ArcGIS retornou erro: {payload.get('error')}"
+    # ArcGIS signals logical errors with HTTP 200 plus an "error" key.
+    assert "error" not in payload, f"ArcGIS returned error: {payload.get('error')}"
     assert "bairro" in payload.get("name", "").lower()
     assert payload.get("geometryType") == "esriGeometryPolygon"
     assert isinstance(payload.get("fields"), list) and payload["fields"]
 
 
-def test_query_retorna_bairros(http_client: httpx.Client) -> None:
+def test_query_returns_neighborhoods(http_client: httpx.Client) -> None:
     response = http_client.get(
         f"{LAYER_URL}/query",
         params={
@@ -45,7 +45,7 @@ def test_query_retorna_bairros(http_client: httpx.Client) -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert "error" not in payload, f"ArcGIS retornou erro: {payload.get('error')}"
+    assert "error" not in payload, f"ArcGIS returned error: {payload.get('error')}"
     features = payload.get("features")
     assert isinstance(features, list) and features
     assert len(features) <= 3

@@ -1,11 +1,11 @@
-"""Testes do adaptador IBGE Localidades, sem rede (httpx MockTransport)."""
+"""Tests for the IBGE Localidades adapter, without network calls (httpx MockTransport)."""
 
 import httpx
 import pytest
 
 from sinal_aberto.adapters.ibge import IbgeError, IbgeLocalidadesClient
 
-_MUNICIPIOS = [
+_MUNICIPALITIES = [
     {
         "id": 3304557,
         "nome": "Rio de Janeiro",
@@ -21,51 +21,51 @@ def _make_client(handler) -> IbgeLocalidadesClient:
     )
 
 
-async def test_municipios_usa_cache_longo() -> None:
-    counter = {"municipios": 0}
+async def test_municipalities_use_long_cache() -> None:
+    counter = {"municipalities": 0}
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/municipios"):
-            counter["municipios"] += 1
-            return httpx.Response(200, json=_MUNICIPIOS)
+            counter["municipalities"] += 1
+            return httpx.Response(200, json=_MUNICIPALITIES)
         return httpx.Response(404)
 
     client = _make_client(handler)
     try:
-        first = await client.get_municipios()
-        second = await client.get_municipios()  # cache: sem nova chamada HTTP
+        first = await client.get_municipalities()
+        second = await client.get_municipalities()  # Cache: no second HTTP call.
     finally:
         await client.aclose()
 
-    assert first == _MUNICIPIOS
-    assert second == _MUNICIPIOS
-    assert counter["municipios"] == 1
+    assert first == _MUNICIPALITIES
+    assert second == _MUNICIPALITIES
+    assert counter["municipalities"] == 1
 
 
-async def test_status_nao_200_levanta_erro() -> None:
+async def test_non_200_status_raises_error() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(503)
 
     client = _make_client(handler)
     try:
         with pytest.raises(IbgeError):
-            await client.get_municipios()
+            await client.get_municipalities()
     finally:
         await client.aclose()
 
 
-async def test_probe_ok_quando_catalogo_responde() -> None:
+async def test_probe_ok_when_catalog_responds() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json=_MUNICIPIOS)
+        return httpx.Response(200, json=_MUNICIPALITIES)
 
     client = _make_client(handler)
     try:
-        await client.probe()  # nao levanta
+        await client.probe()  # Does not raise.
     finally:
         await client.aclose()
 
 
-async def test_probe_falha_quando_catalogo_vazio() -> None:
+async def test_probe_fails_when_catalog_is_empty() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=[])
 

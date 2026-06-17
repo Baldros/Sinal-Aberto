@@ -1,4 +1,4 @@
-"""Testes da ferramenta list_data_sources, sem rede."""
+"""Tests for the list_data_sources tool, without network calls."""
 
 from datetime import datetime, timezone
 
@@ -13,44 +13,44 @@ class _ProbeOK:
 
 class _ProbeFail:
     async def probe(self):
-        raise FogoCruzadoError("indisponivel")
+        raise FogoCruzadoError("unavailable")
 
 
-async def test_lista_fontes_integradas_operacionais() -> None:
+async def test_lists_integrated_operational_sources() -> None:
     result = await list_data_sources(_ProbeOK(), territory=_ProbeOK())
 
     fogo = result.sources[0]
     assert fogo.name == "Fogo Cruzado"
-    assert fogo.status == "operacional"
+    assert fogo.status == "operational"
     assert fogo.last_update_time == datetime(2026, 6, 17, 10, 0, tzinfo=timezone.utc)
 
     ibge = result.sources[1]
     assert ibge.name == "IBGE Localidades"
-    assert ibge.status == "operacional"
+    assert ibge.status == "operational"
 
-    # 2 integradas (Fogo Cruzado + IBGE) + 7 auxiliares
+    # 2 integrated sources (Fogo Cruzado + IBGE) plus 7 auxiliary sources.
     assert len(result.sources) == 9
-    assert all(s.status == "validada, nao integrada" for s in result.sources[2:])
+    assert all(s.status == "validated, not integrated" for s in result.sources[2:])
 
 
-async def test_marca_indisponivel_quando_probe_falha() -> None:
+async def test_marks_unavailable_when_probe_fails() -> None:
     result = await list_data_sources(_ProbeFail())
 
     fogo = result.sources[0]
-    assert fogo.status == "indisponivel"
+    assert fogo.status == "unavailable"
     assert fogo.last_update_time is None
-    assert any("sondagem de saude" in limit for limit in result.limitations)
+    assert any("health probe" in limit for limit in result.limitations)
 
 
-async def test_ibge_indisponivel_quando_probe_falha() -> None:
+async def test_marks_ibge_unavailable_when_probe_fails() -> None:
     result = await list_data_sources(_ProbeOK(), territory=_ProbeFail())
 
     ibge = next(s for s in result.sources if s.name == "IBGE Localidades")
-    assert ibge.status == "indisponivel"
-    assert any("IBGE Localidades nao respondeu" in limit for limit in result.limitations)
+    assert ibge.status == "unavailable"
+    assert any("IBGE Localidades did not respond" in limit for limit in result.limitations)
 
 
-async def test_cor_rio_carrega_limitacao_de_headers() -> None:
+async def test_cor_rio_loads_header_limitation() -> None:
     result = await list_data_sources(_ProbeOK(), territory=_ProbeOK())
     cor = next(s for s in result.sources if s.name == "COR.Rio")
-    assert any("headers de navegador" in limit for limit in cor.known_limitations)
+    assert any("browser-like headers" in limit for limit in cor.known_limitations)

@@ -1,15 +1,15 @@
-"""Fixtures compartilhadas dos testes de integracao de fontes auxiliares.
+"""Shared fixtures for auxiliary-source integration tests.
 
-Cada fonte tem seu proprio arquivo de teste para isolar falhas, mas todas
-reaproveitam o mesmo cliente HTTP configurado aqui.
+Each source has its own test file to isolate failures, but they all reuse the
+same HTTP client configured here.
 """
 
 import httpx
 import pytest
 
 
-# Orgaos publicos as vezes respondem devagar; damos folga no read, mas mantemos
-# o connect curto para falhar rapido quando o host estiver fora do ar.
+# Public agencies can respond slowly; reads get a larger budget while connects
+# stay short so unavailable hosts fail quickly.
 DEFAULT_TIMEOUT = httpx.Timeout(30.0, connect=15.0)
 USER_AGENT = "SinalAberto-IntegrationTests/1.0 (+https://github.com/Sinal-Aberto)"
 

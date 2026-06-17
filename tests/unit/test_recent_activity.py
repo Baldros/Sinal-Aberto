@@ -1,4 +1,4 @@
-"""Testes da ferramenta get_recent_activity e seus helpers, sem rede."""
+"""Tests for the get_recent_activity tool and its helpers, without network calls."""
 
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -9,11 +9,11 @@ from sinal_aberto.models import RecentOccurrence
 from sinal_aberto.tools import recent_activity as ra
 
 
-# -- helpers de fixtures -----------------------------------------------
+# -- fixture helpers ----------------------------------------------------
 
 
 class FakeClient:
-    """Substitui FogoCruzadoClient: devolve dados canned, registra chamadas."""
+    """Stand-in for FogoCruzadoClient: returns canned data and records calls."""
 
     def __init__(
         self,
@@ -51,7 +51,7 @@ def _occ(minutes_ago: int, **overrides: Any) -> dict[str, Any]:
         "locality": {"id": "l", "name": "Morro da Fe"},
         "policeAction": False,
         "agentPresence": False,
-        "contextInfo": {"mainReason": {"id": "r", "name": "Operacao policial"}},
+        "contextInfo": {"mainReason": {"id": "r", "name": "Police operation"}},
         "transports": [],
         "victims": [],
         "animalVictims": [],
@@ -60,7 +60,7 @@ def _occ(minutes_ago: int, **overrides: Any) -> dict[str, Any]:
     return base
 
 
-# -- _parse_window -----------------------------------------------------
+# -- _parse_window ------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -72,7 +72,7 @@ def _occ(minutes_ago: int, **overrides: Any) -> dict[str, Any]:
         ("2d", timedelta(days=2), "2d"),
     ],
 )
-def test_parse_window_valido(value: str, delta: timedelta, label: str) -> None:
+def test_parse_window_valid(value: str, delta: timedelta, label: str) -> None:
     parsed_delta, parsed_label, ok = ra._parse_window(value)
     assert ok is True
     assert parsed_delta == delta
@@ -80,39 +80,39 @@ def test_parse_window_valido(value: str, delta: timedelta, label: str) -> None:
 
 
 @pytest.mark.parametrize("value", ["", "abc", "10", "5x", None])
-def test_parse_window_invalido_cai_para_1h(value) -> None:
+def test_parse_window_invalid_falls_back_to_1h(value) -> None:
     parsed_delta, parsed_label, ok = ra._parse_window(value)
     assert ok is False
     assert parsed_delta == timedelta(hours=1)
     assert parsed_label == "1h"
 
 
-# -- _label / _parse_dt ------------------------------------------------
+# -- _label / _parse_dt -------------------------------------------------
 
 
-def test_label_aceita_dict_str_e_none() -> None:
+def test_label_accepts_dict_str_and_none() -> None:
     assert ra._label({"id": "x", "name": "Penha"}) == "Penha"
     assert ra._label("Centro") == "Centro"
     assert ra._label(None) is None
     assert ra._label("") is None
 
 
-def test_parse_dt_invalido_retorna_none() -> None:
+def test_parse_dt_invalid_returns_none() -> None:
     assert ra._parse_dt("xxx") is None
     assert ra._parse_dt(None) is None
 
 
-# -- _normalize --------------------------------------------------------
+# -- _normalize ---------------------------------------------------------
 
 
-def test_normalize_conta_vitimas_e_obitos() -> None:
+def test_normalize_counts_victims_and_deaths() -> None:
     occ = _occ(
         10,
         policeAction=True,
         agentPresence=True,
         victims=[
-            {"situation": "Morto", "deathDate": None},
-            {"situation": "Ferido", "deathDate": None},
+            {"situation": "dead", "deathDate": None},
+            {"situation": "injured", "deathDate": None},
             {"situation": None, "deathDate": "2026-06-17"},
         ],
         transports=[{"interruptedTransport": True}],
@@ -120,67 +120,68 @@ def test_normalize_conta_vitimas_e_obitos() -> None:
     normalized = ra._normalize(occ)
     assert isinstance(normalized, RecentOccurrence)
     assert normalized.victims_count == 3
-    assert normalized.deaths_count == 2  # "Morto" + deathDate presente
+    assert normalized.deaths_count == 2  # "dead" plus a present deathDate.
     assert normalized.police_action is True
     assert normalized.agent_presence is True
     assert normalized.transport_interrupted is True
     assert normalized.neighborhood == "Penha"
-    assert normalized.main_reason == "Operacao policial"
+    assert normalized.main_reason == "Police operation"
 
 
-def test_normalize_nao_expoe_coordenadas() -> None:
+def test_normalize_does_not_expose_coordinates() -> None:
     normalized = ra._normalize(_occ(5, latitude="-22.9", longitude="-43.2"))
     assert not hasattr(normalized, "latitude")
     assert "latitude" not in normalized.model_dump()
 
 
-# -- _assess -----------------------------------------------------------
+# -- _assess ------------------------------------------------------------
 
 
 def _recent(minutes_ago: int, **over: Any) -> RecentOccurrence:
     return ra._normalize(_occ(minutes_ago, **over))
 
 
-def test_assess_sem_ocorrencias() -> None:
+def test_assess_without_occurrences() -> None:
     evidence, confidence, summary = ra._assess([], datetime.now(timezone.utc))
-    assert evidence == "sem evidencia recente"
-    assert confidence == "baixa"
+    assert evidence == "no recent evidence"
+    assert confidence == "low"
+    assert summary == "No recent records in the requested window."
 
 
-def test_assess_alta_evidencia_por_volume() -> None:
+def test_assess_high_evidence_by_volume() -> None:
     now = datetime.now(timezone.utc)
     recent = [_recent(200) for _ in range(5)]
     evidence, _confidence, _summary = ra._assess(recent, now)
-    assert evidence == "alta evidencia"
+    assert evidence == "high evidence"
 
 
-def test_assess_alta_evidencia_por_recencia() -> None:
+def test_assess_high_evidence_by_recency() -> None:
     now = datetime.now(timezone.utc)
-    recent = [_recent(10), _recent(20)]  # 2 registros frescos (<=60 min)
+    recent = [_recent(10), _recent(20)]  # Two fresh records (<=60 min).
     evidence, confidence, _summary = ra._assess(recent, now)
-    assert evidence == "alta evidencia"
-    assert confidence == "media"
+    assert evidence == "high evidence"
+    assert confidence == "medium"
 
 
-def test_assess_moderada_sem_recencia() -> None:
+def test_assess_moderate_without_recency() -> None:
     now = datetime.now(timezone.utc)
-    recent = [_recent(120), _recent(200)]  # 2 registros, nenhum fresco
+    recent = [_recent(120), _recent(200)]  # Two records, none fresh.
     evidence, _confidence, _summary = ra._assess(recent, now)
-    assert evidence == "evidencia moderada"
+    assert evidence == "moderate evidence"
 
 
-def test_assess_baixa_para_registro_antigo_isolado() -> None:
+def test_assess_low_for_single_old_record() -> None:
     now = datetime.now(timezone.utc)
-    recent = [_recent(300)]  # 1 registro, > 180 min
+    recent = [_recent(300)]  # One record, older than 180 min.
     evidence, confidence, _summary = ra._assess(recent, now)
-    assert evidence == "baixa evidencia"
-    assert confidence == "baixa"
+    assert evidence == "low evidence"
+    assert confidence == "low"
 
 
-# -- get_recent_activity ----------------------------------------------
+# -- get_recent_activity -----------------------------------------------
 
 
-async def test_get_recent_activity_caminho_feliz() -> None:
+async def test_get_recent_activity_happy_path() -> None:
     client = FakeClient(
         cities=[_city()],
         occurrences=[_occ(90), _occ(200)],
@@ -189,31 +190,31 @@ async def test_get_recent_activity_caminho_feliz() -> None:
     result = await ra.get_recent_activity(client, city="Rio de Janeiro", time_window="24h")
 
     assert result.occurrence_count == 2
-    assert result.evidence_level == "evidencia moderada"
-    assert result.confidence_level == "media"
+    assert result.evidence_level == "moderate evidence"
+    assert result.confidence_level == "medium"
     assert result.source_update_time == datetime(2026, 6, 17, 10, 0, tzinfo=timezone.utc)
     assert result.sources[0].name == "Fogo Cruzado"
-    # o filtro de data enviado a API usa granularidade de dia
+    # The date filter sent to the API uses day-level granularity.
     assert "initialdate" in client.occurrence_calls[0]
 
 
-async def test_get_recent_activity_filtra_por_janela() -> None:
+async def test_get_recent_activity_filters_by_window() -> None:
     client = FakeClient(cities=[_city()], occurrences=[_occ(30), _occ(200)])
     result = await ra.get_recent_activity(client, city="Rio de Janeiro", time_window="1h")
-    # so a ocorrencia de 30 min entra na janela de 1h
+    # Only the 30-minute-old occurrence is inside the 1h window.
     assert result.occurrence_count == 1
 
 
-async def test_get_recent_activity_cidade_inexistente() -> None:
+async def test_get_recent_activity_unknown_city() -> None:
     client = FakeClient(cities=[_city()], occurrences=[])
-    result = await ra.get_recent_activity(client, city="Atlantida", time_window="1h")
+    result = await ra.get_recent_activity(client, city="Atlantis", time_window="1h")
     assert result.occurrence_count == 0
-    assert result.evidence_level == "sem evidencia"
-    assert "nao encontrada" in result.activity_summary
-    assert not client.occurrence_calls  # nem chega a consultar ocorrencias
+    assert result.evidence_level == "no evidence"
+    assert "not found" in result.activity_summary
+    assert not client.occurrence_calls  # It never reaches the occurrence query.
 
 
-async def test_get_recent_activity_cidade_ambigua() -> None:
+async def test_get_recent_activity_ambiguous_city() -> None:
     client = FakeClient(
         cities=[
             _city(city_id="c1", state="Rio de Janeiro"),
@@ -222,21 +223,21 @@ async def test_get_recent_activity_cidade_ambigua() -> None:
         occurrences=[_occ(30)],
     )
     result = await ra.get_recent_activity(client, city="Rio de Janeiro", time_window="6h")
-    assert any("Mais de uma cidade" in limit for limit in result.limitations)
-    # usa a primeira correspondencia
+    assert any("More than one city" in limit for limit in result.limitations)
+    # The first match is used when the caller does not disambiguate.
     assert client.occurrence_calls[0]["idCities"] == "c1"
 
 
-async def test_get_recent_activity_filtro_de_regiao_sem_match() -> None:
-    client = FakeClient(cities=[_city()], occurrences=[_occ(30)])  # bairro Penha
+async def test_get_recent_activity_region_filter_without_match() -> None:
+    client = FakeClient(cities=[_city()], occurrences=[_occ(30)])  # Penha neighborhood.
     result = await ra.get_recent_activity(
         client, city="Rio de Janeiro", region="Copacabana", time_window="6h"
     )
     assert result.occurrence_count == 0
-    assert any("regiao 'Copacabana'" in limit for limit in result.limitations)
+    assert any("region 'Copacabana'" in limit for limit in result.limitations)
 
 
-async def test_get_recent_activity_filtro_de_regiao_com_match() -> None:
+async def test_get_recent_activity_region_filter_with_match() -> None:
     client = FakeClient(cities=[_city()], occurrences=[_occ(30)])
     result = await ra.get_recent_activity(
         client, city="Rio de Janeiro", region="penha", time_window="6h"
@@ -244,27 +245,27 @@ async def test_get_recent_activity_filtro_de_regiao_com_match() -> None:
     assert result.occurrence_count == 1
 
 
-async def test_get_recent_activity_janela_invalida_registra_limitacao() -> None:
+async def test_get_recent_activity_invalid_window_records_limitation() -> None:
     client = FakeClient(cities=[_city()], occurrences=[])
     result = await ra.get_recent_activity(client, city="Rio de Janeiro", time_window="xyz")
     assert result.time_window == "1h"
-    assert any("invalido" in limit for limit in result.limitations)
+    assert any("invalid" in limit for limit in result.limitations)
 
 
-async def test_get_recent_activity_sinaliza_proxima_pagina() -> None:
+async def test_get_recent_activity_signals_next_page() -> None:
     client = FakeClient(
         cities=[_city()],
         occurrences=[_occ(30)],
         page_meta={"hasNextPage": True},
     )
     result = await ra.get_recent_activity(client, city="Rio de Janeiro", time_window="24h")
-    assert any("mais recentes" in limit for limit in result.limitations)
+    assert any("most recent" in limit for limit in result.limitations)
 
 
-async def test_get_recent_activity_casa_cidade_com_acento() -> None:
-    # Catalogo com acento; consulta sem acento deve casar (slugify).
+async def test_get_recent_activity_matches_city_without_accent() -> None:
+    # Catalog has accents; unaccented user input must match through slugify.
     client = FakeClient(
-        cities=[_city(name="São Gonçalo", city_id="sg")],
+        cities=[_city(name="S\u00e3o Gon\u00e7alo", city_id="sg")],
         occurrences=[_occ(30)],
     )
     result = await ra.get_recent_activity(client, city="sao goncalo", time_window="6h")
@@ -272,20 +273,20 @@ async def test_get_recent_activity_casa_cidade_com_acento() -> None:
     assert result.occurrence_count == 1
 
 
-# -- enriquecimento territorial (Tier 1 / IBGE) -----------------------
+# -- territorial enrichment (Tier 1 / IBGE) ----------------------------
 
 
 class FakeTerritory:
-    """Substitui IbgeLocalidadesClient: devolve municipios canned ou falha."""
+    """Stand-in for IbgeLocalidadesClient: returns canned municipalities or fails."""
 
-    def __init__(self, municipios=None, *, fail: bool = False) -> None:
-        self._municipios = municipios or []
+    def __init__(self, municipalities=None, *, fail: bool = False) -> None:
+        self._municipalities = municipalities or []
         self._fail = fail
 
-    async def get_municipios(self):
+    async def get_municipalities(self):
         if self._fail:
-            raise RuntimeError("ibge fora do ar")
-        return self._municipios
+            raise RuntimeError("ibge unavailable")
+        return self._municipalities
 
 
 def _muni_rio():
@@ -300,7 +301,7 @@ def _muni_rio():
     }
 
 
-async def test_enriquece_com_contexto_territorial() -> None:
+async def test_enriches_with_territorial_context() -> None:
     client = FakeClient(cities=[_city()], occurrences=[_occ(30)])
     territory = FakeTerritory([_muni_rio()])
     result = await ra.get_recent_activity(
@@ -312,26 +313,26 @@ async def test_enriquece_com_contexto_territorial() -> None:
     assert ctx.ibge_city_code == 3304557
     assert ctx.uf == "RJ"
     assert ctx.macro_region == "Sudeste"
-    assert ctx.match_quality == "exato"
-    # a fonte IBGE entra na lista de fontes atribuidas
+    assert ctx.match_quality == "exact"
+    # The IBGE source is included in attribution when enrichment succeeds.
     assert any(s.name == "IBGE Localidades" for s in result.sources)
 
 
-async def test_territorio_indisponivel_degrada_sem_quebrar() -> None:
+async def test_unavailable_territory_degrades_without_breaking() -> None:
     client = FakeClient(cities=[_city()], occurrences=[_occ(30)])
     territory = FakeTerritory(fail=True)
     result = await ra.get_recent_activity(
         client, city="Rio de Janeiro", time_window="6h", territory=territory
     )
 
-    # a resposta principal nao quebra; so registra a limitacao
+    # The main response remains usable and records only a limitation.
     assert result.occurrence_count == 1
     assert result.territorial_context is None
     assert any("IBGE" in limit for limit in result.limitations)
     assert not any(s.name == "IBGE Localidades" for s in result.sources)
 
 
-async def test_sem_territorio_nao_enriquece() -> None:
+async def test_without_territory_does_not_enrich() -> None:
     client = FakeClient(cities=[_city()], occurrences=[_occ(30)])
     result = await ra.get_recent_activity(client, city="Rio de Janeiro", time_window="6h")
     assert result.territorial_context is None

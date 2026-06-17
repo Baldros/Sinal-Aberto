@@ -1,11 +1,11 @@
-"""Teste de conexao: GPS SPPO (dados.mobilidade.rio).
+"""Connection test: GPS SPPO (dados.mobilidade.rio).
 
-Fonte auxiliar de contexto operacional de mobilidade. Validada em
-docs/validacao-fontes-secundarias.md (2026-06-12). Sem autenticacao.
+Auxiliary source for operational mobility context. Validated in
+docs/validacao-fontes-secundarias.md (2026-06-12). No authentication.
 
-A validacao exige sempre uma janela temporal curta: sem filtro a resposta
-passa de 90 MB. A janela e gerada dinamicamente no horario de Sao Paulo, em
-vez de datas fixas, usando datetime da stdlib.
+Validation always requires a short time window: without filters the response
+exceeds 90 MB. The window is generated dynamically in Sao Paulo time instead of
+using fixed dates.
 """
 
 from datetime import datetime, timedelta, timezone
@@ -17,39 +17,39 @@ import pytest
 pytestmark = pytest.mark.integration
 
 ENDPOINT = "https://dados.mobilidade.rio/gps/sppo"
-# Sao Paulo e UTC-3 fixo: o Brasil aboliu o horario de verao em 2019. Usamos
-# offset fixo via datetime para nao depender da base IANA (tzdata), que nao
-# acompanha o Python no Windows.
+# Sao Paulo is fixed UTC-3 for this purpose because Brazil abolished daylight
+# saving time in 2019. A fixed datetime offset avoids depending on IANA tzdata,
+# which is not bundled with Python on Windows.
 RIO_TZ = timezone(timedelta(hours=-3))
 API_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
-# Campos minimos esperados em cada amostra de GPS, conforme a validacao.
+# Minimum fields expected in each GPS sample, as documented in validation.
 SAMPLE_KEYS = {"ordem", "latitude", "longitude", "datahora", "linha"}
 
 
-def _janela_recente(minutos: int = 5, atraso: int = 2) -> dict[str, str]:
-    """Janela curta terminando alguns minutos atras (folga de ingestao)."""
-    fim = datetime.now(RIO_TZ) - timedelta(minutes=atraso)
-    inicio = fim - timedelta(minutes=minutos)
+def _recent_window(minutes: int = 5, delay: int = 2) -> dict[str, str]:
+    """Short window ending a few minutes ago to allow ingestion lag."""
+    end = datetime.now(RIO_TZ) - timedelta(minutes=delay)
+    start = end - timedelta(minutes=minutes)
     return {
-        "dataInicial": inicio.strftime(API_DATETIME_FORMAT),
-        "dataFinal": fim.strftime(API_DATETIME_FORMAT),
+        "dataInicial": start.strftime(API_DATETIME_FORMAT),
+        "dataFinal": end.strftime(API_DATETIME_FORMAT),
     }
 
 
-def test_janela_curta_responde_json(http_client: httpx.Client) -> None:
-    response = http_client.get(ENDPOINT, params=_janela_recente())
+def test_short_window_returns_json(http_client: httpx.Client) -> None:
+    response = http_client.get(ENDPOINT, params=_recent_window())
 
     assert response.status_code == 200, (
-        f"GPS SPPO respondeu status={response.status_code}"
+        f"GPS SPPO returned status={response.status_code}"
     )
-    # O Content-Type vem como text/html, mas o corpo e JSON; parse direto.
+    # Content-Type is text/html, but the body is JSON; parse it directly.
     payload = response.json()
-    assert isinstance(payload, list), "GPS SPPO deveria retornar uma lista JSON"
+    assert isinstance(payload, list), "GPS SPPO should return a JSON list"
 
-    # Pode vir vazio em horarios de baixa operacao; so validamos o contrato
-    # quando houver amostras.
+    # It can be empty during low-operation hours; validate the contract only
+    # when samples are present.
     if payload:
         assert SAMPLE_KEYS <= set(payload[0]), (
-            f"Amostra de GPS sem campos esperados: {SAMPLE_KEYS - set(payload[0])}"
+            f"GPS sample missing expected fields: {SAMPLE_KEYS - set(payload[0])}"
         )

@@ -1,4 +1,4 @@
-"""Testes do adaptador Fogo Cruzado, sem rede (httpx MockTransport)."""
+"""Tests for the Fogo Cruzado adapter, without network calls (httpx MockTransport)."""
 
 from datetime import datetime, timezone
 
@@ -27,7 +27,7 @@ def _make_client(handler) -> FogoCruzadoClient:
     )
 
 
-# -- parse_api_datetime ------------------------------------------------
+# -- parse_api_datetime -------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -43,20 +43,20 @@ def test_parse_api_datetime_iso(value: str, expected: datetime) -> None:
     assert parsed.astimezone(timezone.utc) == expected
 
 
-def test_parse_api_datetime_naive_assume_utc() -> None:
+def test_parse_api_datetime_naive_assumes_utc() -> None:
     parsed = parse_api_datetime("2026-06-17 10:00:00")
     assert parsed == datetime(2026, 6, 17, 10, 0, tzinfo=timezone.utc)
 
 
-@pytest.mark.parametrize("value", [None, "", "nao-e-data"])
-def test_parse_api_datetime_invalido(value) -> None:
+@pytest.mark.parametrize("value", [None, "", "not-a-date"])
+def test_parse_api_datetime_invalid(value) -> None:
     assert parse_api_datetime(value) is None
 
 
-# -- autenticacao e cache ----------------------------------------------
+# -- authentication and cache ------------------------------------------
 
 
-async def test_token_reaproveitado_entre_requisicoes() -> None:
+async def test_token_reused_between_requests() -> None:
     counter = {"login": 0, "cities": 0, "occurrences": 0}
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -75,17 +75,17 @@ async def test_token_reaproveitado_entre_requisicoes() -> None:
     client = _make_client(handler)
     try:
         await client.get_cities()
-        await client.get_cities()  # cache: nao deve gerar nova chamada HTTP
+        await client.get_cities()  # Cache: no second HTTP call.
         await client.get_occurrences({"page": 1})
     finally:
         await client.aclose()
 
-    assert counter["login"] == 1  # token reaproveitado
-    assert counter["cities"] == 1  # segunda consulta veio do cache
+    assert counter["login"] == 1  # Token reused.
+    assert counter["cities"] == 1  # Second city lookup came from cache.
     assert counter["occurrences"] == 1
 
 
-async def test_reautentica_apos_401() -> None:
+async def test_reauthenticates_after_401() -> None:
     state = {"login": 0, "occ": 0}
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -110,13 +110,13 @@ async def test_reautentica_apos_401() -> None:
     finally:
         await client.aclose()
 
-    assert state["login"] == 2  # relogou apos o 401
-    assert state["occ"] == 2  # repetiu a chamada
+    assert state["login"] == 2  # Re-login after the 401.
+    assert state["occ"] == 2  # Request retried once.
     assert data == [{"id": "x"}]
     assert last_update == datetime(2026, 6, 17, 10, 0, tzinfo=timezone.utc)
 
 
-async def test_login_falho_levanta_erro() -> None:
+async def test_failed_login_raises_error() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/auth/login"):
             return httpx.Response(500, json={"code": 500})
@@ -130,7 +130,7 @@ async def test_login_falho_levanta_erro() -> None:
         await client.aclose()
 
 
-async def test_probe_retorna_last_update() -> None:
+async def test_probe_returns_last_update() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         path = request.url.path
         if path.endswith("/auth/login"):

@@ -1,7 +1,7 @@
-"""Teste de conexao: ISP Dados RJ (CKAN do Dados Abertos RJ + arquivos ISP).
+"""Connection test: ISP Dados RJ (Open Data RJ CKAN plus ISP files).
 
-Fonte auxiliar de historico oficial de seguranca no RJ. Validada em
-docs/validacao-fontes-secundarias.md (2026-06-12). Sem autenticacao.
+Auxiliary source for official public-safety history in RJ. Validated in
+docs/validacao-fontes-secundarias.md (2026-06-12). No authentication.
 """
 
 import httpx
@@ -11,41 +11,40 @@ import pytest
 pytestmark = pytest.mark.integration
 
 CKAN_PACKAGE_SHOW = "https://dadosabertos.rj.gov.br/api/3/action/package_show"
-ESTATISTICAS_PACKAGE_ID = "isp-estatisticas-de-seguranca-publica"
-DIVISAO_TERRITORIAL_PACKAGE_ID = "isp-divisao-territorial"
+SECURITY_STATISTICS_PACKAGE_ID = "isp-estatisticas-de-seguranca-publica"
+TERRITORIAL_DIVISION_PACKAGE_ID = "isp-divisao-territorial"
 
-# Arquivo direto validado com HTTP 200 no levantamento.
-CSV_EVOLUCAO_MENSAL = (
+# Direct file validated with HTTP 200 during source assessment.
+MONTHLY_EVOLUTION_CSV = (
     "https://www.ispdados.rj.gov.br/Arquivos/BaseDPEvolucaoMensalCisp.csv"
 )
 
 
 @pytest.mark.parametrize(
     "package_id",
-    [ESTATISTICAS_PACKAGE_ID, DIVISAO_TERRITORIAL_PACKAGE_ID],
+    [SECURITY_STATISTICS_PACKAGE_ID, TERRITORIAL_DIVISION_PACKAGE_ID],
 )
 def test_ckan_package_show(http_client: httpx.Client, package_id: str) -> None:
     response = http_client.get(CKAN_PACKAGE_SHOW, params={"id": package_id})
 
     assert response.status_code == 200, (
-        f"CKAN RJ respondeu status={response.status_code} para {package_id}"
+        f"CKAN RJ returned status={response.status_code} for {package_id}"
     )
     payload = response.json()
     assert payload.get("success") is True
     resources = payload["result"]["resources"]
     assert isinstance(resources, list) and resources, (
-        f"Pacote {package_id} veio sem recursos"
+        f"Package {package_id} returned no resources"
     )
 
 
-def test_csv_evolucao_mensal_acessivel(http_client: httpx.Client) -> None:
-    # Arquivo grande: validamos apenas os headers da resposta sem baixar o
-    # corpo inteiro.
-    with http_client.stream("GET", CSV_EVOLUCAO_MENSAL) as response:
+def test_monthly_evolution_csv_accessible(http_client: httpx.Client) -> None:
+    # Large file: validate response headers without downloading the whole body.
+    with http_client.stream("GET", MONTHLY_EVOLUTION_CSV) as response:
         assert response.status_code == 200, (
-            f"CSV do ISP respondeu status={response.status_code}"
+            f"ISP CSV returned status={response.status_code}"
         )
         content_type = response.headers.get("content-type", "").lower()
         assert any(
             token in content_type for token in ("csv", "text", "octet-stream")
-        ), f"Content-Type inesperado para o CSV do ISP: {content_type!r}"
+        ), f"Unexpected Content-Type for ISP CSV: {content_type!r}"

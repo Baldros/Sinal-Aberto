@@ -1,11 +1,11 @@
-"""Testa o registro das tools no servidor MCP (offline, sem executar as tools)."""
+"""Tests MCP tool registration offline, without executing the tools."""
 
 from fastmcp import Client
 
 from sinal_aberto.server import mcp
 
 
-async def test_tools_registradas() -> None:
+async def test_tools_registered() -> None:
     async with Client(mcp) as client:
         tools = {tool.name: tool for tool in await client.list_tools()}
 
