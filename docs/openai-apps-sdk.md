@@ -1,80 +1,93 @@
 # OpenAI Apps SDK
 
-Este documento resume o básico do **Apps SDK oficial da OpenAI** para orientar a evolução do Sinal Aberto como app dentro do ChatGPT.
+This document summarizes the essentials of the official **OpenAI Apps SDK** to
+guide the evolution of Sinal Aberto as an app inside ChatGPT.
 
-A proposta aqui não é substituir a documentação oficial, mas registrar os pontos essenciais e manter os links principais para consulta posterior.
+The goal is not to replace the official documentation. This file records the key
+points for the project and keeps the main links available for later reference.
 
-## Posicionamento para o Sinal Aberto
+## Positioning for Sinal Aberto
 
-O Sinal Aberto foi pensado inicialmente como um app para o ChatGPT, mas a natureza do projeto aponta para algo maior: uma camada de utilidade pública acessível por múltiplos assistentes.
+Sinal Aberto was initially imagined as a ChatGPT app, but the nature of the
+project points to something broader: a public-utility layer available to
+multiple assistants.
 
-O caminho mais alinhado com isso é construir o Sinal Aberto como um **servidor MCP aberto**, consumido pelo ChatGPT via Apps SDK e, futuramente, por outros chatbots e clientes compatíveis com MCP.
+The most aligned path is to build Sinal Aberto as an **open MCP server**,
+consumed by ChatGPT through the Apps SDK and, later, by other MCP-compatible
+chatbots and clients.
 
-Em termos práticos:
+In practical terms:
 
-- o **backend/MCP server** concentra os dados, ferramentas, scores, regras de segurança e explicabilidade;
-- no MVP, esse backend deve ser leve: Python/FastMCP, SQLite, cache curto e clusterização no código da aplicação;
-- o **ChatGPT app** usa esse servidor para responder perguntas e, se necessário, renderizar uma interface visual;
-- outros chatbots podem usar a mesma camada MCP quando houver compatibilidade;
-- a lógica pública do projeto não fica presa a um único cliente.
+- the **backend/MCP server** centralizes data, tools, scores, safety rules, and explainability;
+- in the MVP, that backend should be lightweight: Python/FastMCP, SQLite, short cache, and clustering in application code;
+- the **ChatGPT app** uses that server to answer questions and, if needed, render a visual interface;
+- other chatbots can use the same MCP layer when they support the protocol;
+- the project's public logic is not locked to a single client.
 
-## O que é o Apps SDK
+## What the Apps SDK Is
 
-O **OpenAI Apps SDK** é o framework oficial para construir apps que estendem o ChatGPT.
+The **OpenAI Apps SDK** is the official framework for building apps that extend
+ChatGPT.
 
-Segundo a documentação oficial, apps criados com o Apps SDK usam o **Model Context Protocol (MCP)** para se conectar ao ChatGPT. Para criar um app, normalmente são necessários:
+According to the official documentation, apps built with the Apps SDK use the
+**Model Context Protocol (MCP)** to connect to ChatGPT. Creating an app usually
+requires:
 
-1. um **servidor MCP**, obrigatório, que define as capacidades do app como ferramentas;
-2. opcionalmente, um **componente web**, renderizado em um iframe dentro do ChatGPT, caso o app precise de interface visual.
+1. a required **MCP server**, which defines the app's capabilities as tools;
+2. optionally, a **web component**, rendered inside ChatGPT in an iframe when the app needs a visual interface.
 
-Links oficiais:
+Official links:
 
-- Página principal do Apps SDK: https://developers.openai.com/apps-sdk
+- Apps SDK homepage: https://developers.openai.com/apps-sdk
 - Quickstart: https://developers.openai.com/apps-sdk/quickstart
-- Referência: https://developers.openai.com/apps-sdk/reference
-- Exemplos oficiais no GitHub: https://github.com/openai/openai-apps-sdk-examples
+- Reference: https://developers.openai.com/apps-sdk/reference
+- Official examples on GitHub: https://github.com/openai/openai-apps-sdk-examples
 
-## Diferença entre GPT com Action e app com Apps SDK
+## GPT With Action vs. Apps SDK App
 
-### GPT com Action
+### GPT With Action
 
-Um GPT com Action é um caminho mais simples para MVPs. Ele permite conectar um GPT customizado a uma API externa por meio de um schema OpenAPI.
+A GPT with an Action is a simpler path for MVPs. It connects a custom GPT to an
+external API through an OpenAPI schema.
 
-Pode ser útil para validar rapidamente:
+It can validate quickly:
 
-- perguntas principais dos usuários;
-- formato das respostas;
-- utilidade dos dados;
-- necessidade de filtros por cidade, bairro, raio e janela temporal.
+- users' main questions;
+- response format;
+- data usefulness;
+- need for city, neighborhood, radius, and time-window filters.
 
-Links oficiais:
+Official links:
 
-- Introdução a Actions: https://platform.openai.com/docs/actions
-- Actions em GPTs: https://help.openai.com/en/articles/9442513-gpt-actions
-- Autenticação em Actions: https://platform.openai.com/docs/actions/authentication
+- Introduction to Actions: https://platform.openai.com/docs/actions
+- Actions in GPTs: https://help.openai.com/en/articles/9442513-gpt-actions
+- Actions authentication: https://platform.openai.com/docs/actions/authentication
 
-### App com Apps SDK
+### Apps SDK App
 
-O Apps SDK é mais adequado quando o produto precisa de:
+The Apps SDK is more appropriate when the product needs:
 
-- ferramentas MCP bem definidas;
-- interface visual dentro do ChatGPT;
-- componentes interativos;
-- fluxo de publicação/revisão como app;
-- arquitetura reaproveitável por outros clientes MCP;
-- maior controle de estado, autenticação, UX e deploy.
+- well-defined MCP tools;
+- a visual interface inside ChatGPT;
+- interactive components;
+- an app publication/review flow;
+- architecture reusable by other MCP clients;
+- more control over state, authentication, UX, and deployment.
 
-Para o Sinal Aberto, o Apps SDK faz mais sentido na fase em que o projeto já tiver backend próprio, score probabilístico, endpoints estáveis e alguma experiência visual ou interativa.
+For Sinal Aberto, the Apps SDK makes the most sense once the project has its own
+backend, probabilistic scoring, stable endpoints, and some visual or interactive
+experience.
 
-## Componentes principais
+## Main Components
 
-### 1. Servidor MCP
+### 1. MCP Server
 
-O servidor MCP é a base do app.
+The MCP server is the foundation of the app.
 
-Ele expõe ferramentas que o ChatGPT pode chamar para buscar dados, calcular métricas e explicar resultados.
+It exposes tools ChatGPT can call to fetch data, calculate metrics, and explain
+results.
 
-Para o Sinal Aberto, ferramentas possíveis:
+Possible Sinal Aberto tools:
 
 ```text
 get_recent_activity(city, region, time_window)
@@ -85,64 +98,67 @@ explain_assessment(cluster_id)
 list_data_sources()
 ```
 
-Essas ferramentas devem retornar dados suficientes para o modelo responder com fonte, horário, nível de confiança, limitação e explicação.
+These tools should return enough data for the model to answer with source,
+timestamp, confidence level, limitation, and explanation.
 
-Links oficiais:
+Official links:
 
 - MCP Apps in ChatGPT: https://developers.openai.com/apps-sdk/concepts/mcp-apps
 - MCP Server: https://developers.openai.com/apps-sdk/concepts/server
-- Definir ferramentas: https://developers.openai.com/apps-sdk/plan/define-tools
+- Define tools: https://developers.openai.com/apps-sdk/plan/define-tools
 - Set up your server: https://developers.openai.com/apps-sdk/build/server
 
-### 2. Ferramentas
+### 2. Tools
 
-Ferramentas são as capacidades que o app oferece ao ChatGPT.
+Tools are the capabilities the app offers to ChatGPT.
 
-No caso do Sinal Aberto, elas devem evitar respostas operacionais sensíveis e focar em informação pública, contextualização e avaliação probabilística.
+For Sinal Aberto, tools should avoid sensitive operational answers and focus on
+public information, context, and probabilistic assessment.
 
-Exemplo de ferramenta conceitual:
+Conceptual tool example:
 
 ```text
 estimate_activity_probability
 
-Entrada:
-- cidade
-- bairro ou região
-- latitude/longitude opcional
-- raio opcional
-- janela temporal
+Input:
+- city
+- neighborhood or region
+- optional latitude/longitude
+- optional radius
+- time window
 
-Saída:
-- probabilidade/faixa de atividade atual
-- nível de confiança
-- evidências recentes
-- fatores históricos usados como prior
-- limitações da estimativa
-- fontes consultadas
-- horário da consulta
+Output:
+- probability/current-activity band
+- confidence level
+- recent evidence
+- historical factors used as priors
+- estimate limitations
+- consulted sources
+- query time
 ```
 
-Links oficiais:
+Official links:
 
-- Definir ferramentas: https://developers.openai.com/apps-sdk/plan/define-tools
-- Referência do Apps SDK: https://developers.openai.com/apps-sdk/reference
+- Define tools: https://developers.openai.com/apps-sdk/plan/define-tools
+- Apps SDK reference: https://developers.openai.com/apps-sdk/reference
 
-### 3. Componente web opcional
+### 3. Optional Web Component
 
-O Apps SDK permite criar uma interface visual renderizada dentro do ChatGPT.
+The Apps SDK can render a visual interface inside ChatGPT.
 
-Para o Sinal Aberto, isso pode ser útil para:
+For Sinal Aberto, this may be useful for:
 
-- mapa simplificado por regiões;
-- lista de clusters ativos;
-- cards de evidência;
-- escala de probabilidade e impacto;
-- linha do tempo de ocorrências recentes;
-- explicação dos sinais que sustentam a avaliação.
+- simplified regional map;
+- active cluster list;
+- evidence cards;
+- probability and impact scale;
+- recent-occurrence timeline;
+- explanation of signals behind the assessment.
 
-A documentação informa que o componente web é opcional: se o app só precisar de ferramentas e respostas textuais, não é necessário registrar uma UI.
+The documentation states that the web component is optional. If the app only
+needs tools and text responses, registering a UI is not required.
 
-Links oficiais:
+Official links:
 
 - Quickstart: https://developers.openai.com/apps-sdk/quickstart
 - Build your ChatGPT UI: https://developers.openai.com/apps-sdk/build/ui
@@ -150,185 +166,134 @@ Links oficiais:
 - UI guidelines: https://developers.openai.com/apps-sdk/concepts/ui-guidelines
 - UX principles: https://developers.openai.com/apps-sdk/concepts/ux-principles
 
-### 4. Autenticação
+### 4. Authentication
 
-Dependendo das fontes e funcionalidades, o app pode exigir autenticação.
+Depending on sources and features, the app may require authentication.
 
-Para o Sinal Aberto, a primeira versão idealmente deveria evitar login de usuário e operar com dados públicos/agregados, reduzindo risco de privacidade. Se no futuro houver preferências, histórico de locais ou alertas personalizados, será necessário avaliar autenticação e política de privacidade com muito mais cuidado.
+For Sinal Aberto, the first version should ideally avoid user login and operate
+with public/aggregate data, reducing privacy risk. If future versions include
+preferences, location history, or personalized alerts, authentication and the
+privacy policy will need more careful design.
 
-Links oficiais:
+Official links:
 
 - Authenticate users: https://developers.openai.com/apps-sdk/build/auth
 - Security & Privacy: https://developers.openai.com/apps-sdk/guides/security-privacy
 
-### 5. Estado
+### 5. State
 
-O app pode precisar gerenciar estado de sessão, filtros e resultados recentes.
+The app may need to manage session state, filters, and recent results.
 
-Para o Sinal Aberto, exemplos de estado:
+Sinal Aberto state examples:
 
-- cidade selecionada;
-- região/bairro consultado;
-- janela temporal;
-- último cluster visualizado;
-- preferências de visualização.
+- selected city;
+- queried region/neighborhood;
+- time window;
+- last viewed cluster;
+- visualization preferences.
 
-Por privacidade, o projeto deve evitar armazenar localização precisa do usuário quando não for necessário.
+For privacy, the project should avoid storing precise user location unless it is
+necessary.
 
-Links oficiais:
+Official link:
 
 - Manage state: https://developers.openai.com/apps-sdk/build/state
 
-## Deploy
+## Deployment
 
-A documentação oficial indica que, durante desenvolvimento local, é possível expor o servidor local ao ChatGPT usando um túnel como `ngrok`.
+The official documentation indicates that, during local development, a local
+server can be exposed to ChatGPT with a tunnel such as `ngrok`.
 
-Para produção, o app deve estar atrás de um endpoint HTTPS estável. A documentação destaca requisitos como:
+For production, the app must sit behind a stable HTTPS endpoint. Requirements
+include:
 
-- baixa latência;
-- suporte a streaming em `/mcp`;
-- TLS confiável;
-- logs e métricas para depuração;
-- endpoint estável;
-- tratamento adequado de erros HTTP.
+- low latency;
+- streaming support at `/mcp`;
+- reliable TLS;
+- logs and metrics for debugging;
+- stable endpoint;
+- appropriate HTTP error handling.
 
-Links oficiais:
+Official links:
 
 - Deploy your app: https://developers.openai.com/apps-sdk/deploy
 - Connect from ChatGPT: https://developers.openai.com/apps-sdk/deploy/connect
 - Test your integration: https://developers.openai.com/apps-sdk/deploy/test
 - Troubleshooting: https://developers.openai.com/apps-sdk/guides/troubleshooting
 
-## Submissão e publicação
+## Submission and Publication
 
-Depois de construir e testar o app em Developer Mode, a publicação pública passa pelo fluxo de revisão no dashboard da OpenAI.
+After building and testing the app in Developer Mode, public publication goes
+through the OpenAI dashboard review flow.
 
-Segundo a documentação oficial, antes de submeter é necessário observar pontos como:
+Before submission, the official documentation calls out points such as:
 
-- verificação da organização ou pessoa que publicará o app;
-- permissões de gerenciamento de apps no dashboard;
-- servidor MCP hospedado em domínio publicamente acessível;
-- não usar endpoint local ou apenas de teste;
-- definir uma Content Security Policy (CSP) com os domínios exatos acessados;
-- fornecer informações como nome do app, logo, descrição, URLs da empresa e política de privacidade, dados do MCP, informações das ferramentas, screenshots, prompts de teste e localização.
+- verification of the organization or person publishing the app;
+- app-management permissions in the dashboard;
+- MCP server hosted on a publicly accessible domain;
+- no local-only or test-only endpoint;
+- Content Security Policy (CSP) with exact accessed domains;
+- app name, logo, description, company URLs, privacy policy, MCP data, tool
+  information, screenshots, test prompts, and localization.
 
-Links oficiais:
+Official links:
 
 - Submit your app: https://developers.openai.com/apps-sdk/deploy/submission
 - App submission guidelines: https://developers.openai.com/apps-sdk/resources/app-submission-guidelines
 - Developer Mode: https://platform.openai.com/docs/apps/developer-mode
 - Platform Dashboard: https://platform.openai.com/
 
-## Pontos específicos para o Sinal Aberto
+## Sinal Aberto-Specific Points
 
-Como o Sinal Aberto lida com segurança pública, o app precisa ser conservador no design.
+Because Sinal Aberto handles public-safety context, the app needs conservative
+design.
 
-### O que o app deve fazer
+### What the app should do
 
-- Informar evidências recentes de atividade armada ou policial.
-- Indicar fonte, horário de consulta e nível de confiança.
-- Explicar a classificação probabilística.
-- Mostrar limitações da estimativa.
-- Agregar eventos em clusters para reduzir ruído.
-- Evitar falsa precisão.
-- Priorizar linguagem cidadã e não operacional.
+- Report recent evidence of armed or police activity.
+- Indicate source, query time, and confidence level.
+- Explain the probabilistic classification.
+- Show estimate limitations.
+- Aggregate events into clusters to reduce noise.
+- Avoid false precision.
+- Prioritize civic, non-operational language.
 
-### O que o app deve evitar
+### What the app should avoid
 
-- Afirmar certeza sobre operação em andamento sem fonte oficial.
-- Expor localização precisa de agentes ou forças de segurança.
-- Sugerir rotas para contornar operações.
-- Incentivar decisões táticas perigosas.
-- Armazenar localização precisa do usuário sem necessidade.
-- Usar fontes não verificadas sem sinalizar incerteza.
+- Claim certainty about an ongoing operation without an official source.
+- Expose precise locations of agents or public-safety forces.
+- Suggest routes around operations.
+- Encourage dangerous tactical decisions.
+- Store precise user location without need.
+- Use unverified sources without flagging uncertainty.
 
-## Arquitetura sugerida
+## Suggested Architecture
 
 ```text
-ChatGPT / outros clientes MCP
+ChatGPT / other MCP clients
         |
         v
-Servidor MCP do Sinal Aberto
+Sinal Aberto MCP server
         |
-        +-- Ferramentas de consulta recente
-        +-- Ferramentas de clusterização
-        +-- Ferramentas de score probabilístico
-        +-- Ferramentas de explicabilidade
+        +-- recent-query tools
+        +-- clustering tools
+        +-- probabilistic-scoring tools
+        +-- explainability tools
         |
         v
-Backend de dados
+Data backend
         |
-        +-- SQLite no MVP
-        +-- Fogo Cruzado
-        +-- ISP Dados
-        +-- SINESP / MJSP
-        +-- DATA.RIO
-        +-- fontes complementares verificadas
+        +-- Fogo Cruzado adapter
+        +-- IBGE territorial adapter
+        +-- optional historical baselines
+        +-- cache / SQLite
 ```
 
-No MVP, SQLite deve armazenar ocorrências normalizadas, clusters recentes e cache curto. PostgreSQL/PostGIS e Redis ficam como evolução quando houver maior escala, consultas espaciais complexas ou necessidade de várias instâncias.
+## Recommended Path
 
-## Roadmap técnico sugerido
-
-- [ ] Validar acesso, termos e limites da API do Fogo Cruzado.
-- [ ] Criar backend mínimo em Python/FastMCP.
-- [ ] Definir schema SQLite inicial para ocorrências, clusters e cache.
-- [ ] Criar camada de consulta e cache curto.
-- [ ] Definir ferramentas MCP iniciais.
-- [ ] Criar servidor MCP local.
-- [ ] Testar no ChatGPT via Developer Mode.
-- [ ] Implementar score probabilístico inicial.
-- [ ] Implementar agrupamento por clusters no código da aplicação.
-- [ ] Adicionar respostas explicáveis.
-- [ ] Avaliar necessidade de componente web.
-- [ ] Preparar política de privacidade.
-- [ ] Preparar prompts de teste e screenshots.
-- [ ] Submeter app para revisão quando houver estabilidade.
-
-## Links oficiais principais
-
-### Apps SDK
-
-- Página principal: https://developers.openai.com/apps-sdk
-- Quickstart: https://developers.openai.com/apps-sdk/quickstart
-- Referência: https://developers.openai.com/apps-sdk/reference
-- Changelog: https://developers.openai.com/apps-sdk/resources/changelog
-- Exemplos: https://github.com/openai/openai-apps-sdk-examples
-
-### Planejamento
-
-- Research use cases: https://developers.openai.com/apps-sdk/plan/research-use-cases
-- Define tools: https://developers.openai.com/apps-sdk/plan/define-tools
-- Design components: https://developers.openai.com/apps-sdk/plan/design-components
-
-### Build
-
-- Set up your server: https://developers.openai.com/apps-sdk/build/server
-- Build your ChatGPT UI: https://developers.openai.com/apps-sdk/build/ui
-- Authenticate users: https://developers.openai.com/apps-sdk/build/auth
-- Manage state: https://developers.openai.com/apps-sdk/build/state
-
-### Deploy e publicação
-
-- Deploy your app: https://developers.openai.com/apps-sdk/deploy
-- Connect from ChatGPT: https://developers.openai.com/apps-sdk/deploy/connect
-- Test your integration: https://developers.openai.com/apps-sdk/deploy/test
-- Submit your app: https://developers.openai.com/apps-sdk/deploy/submission
-- App submission guidelines: https://developers.openai.com/apps-sdk/resources/app-submission-guidelines
-
-### Segurança, privacidade e UX
-
-- Security & Privacy: https://developers.openai.com/apps-sdk/guides/security-privacy
-- UX principles: https://developers.openai.com/apps-sdk/concepts/ux-principles
-- UI guidelines: https://developers.openai.com/apps-sdk/concepts/ui-guidelines
-- Troubleshooting: https://developers.openai.com/apps-sdk/guides/troubleshooting
-
-### Complementar: ChatGPT Actions
-
-- Actions: https://platform.openai.com/docs/actions
-- GPT Actions: https://help.openai.com/en/articles/9442513-gpt-actions
-- Actions authentication: https://platform.openai.com/docs/actions/authentication
-
-## Status
-
-Documento inicial de referência. Deve ser atualizado conforme o projeto evoluir e conforme a documentação oficial da OpenAI mudar.
+1. Build the backend as an MCP server first.
+2. Expose `list_data_sources` and `get_recent_activity`.
+3. Test locally with Developer Mode and a tunnel.
+4. Add clustering and scoring only after the first tool contract is stable.
+5. Add a visual component only if it clearly improves comprehension.
+6. Prepare privacy policy, source attribution, and safety limitations before any public submission.
