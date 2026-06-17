@@ -250,16 +250,54 @@ Implementation:
 
 This tier is already implemented.
 
-### Tier 2 - Historical Baseline
+### Tier 2 - Violence Intensity (decided 2026-06-17)
 
-Goal: answer whether recent activity is unusual for the location.
+Goal: answer "is this area prohibitively intense / operation-prone?" with two
+complementary lenses on different time scales. Both are descriptive (Phase A):
+they never change `evidence_level` or `confidence_level`.
 
-Implementation:
+The product's core question is *"is there a police operation here, is it too
+dangerous to leave home?"*. The live answer is Fogo Cruzado + COR.Rio; this tier
+adds the *intensity/risk context* around it.
 
-- Write offline ingestion for ISP/SINESP resources.
-- Produce a small prepared file keyed by IBGE city code.
-- Add optional `historical_baseline` to responses.
-- Use the baseline only as context, not as proof of a live event.
+**2a - Fogo Cruzado recent intensity (no new infra).** Mine the live data we
+already fetch but currently discard:
+
+- `contextInfo.massacre` -> per-occurrence massacre flag (high severity).
+- `contextInfo.policeUnit` -> count of *distinct* units in the window (a large,
+  coordinated operation shows several units), never exposing the unit itself.
+- `latitude`/`longitude` -> spatial concentration via the Haversine formula,
+  computed in memory (no geospatial API, no clustering DB). Output is coarse
+  (a level plus an approximate, rounded spread and the neighborhood label),
+  never raw coordinates or a centroid. Because Fogo Cruzado approximates
+  coordinates, "dispersed" is trustworthy but "concentrated" may be a geocoding
+  artifact: tight clusters are reported with lower confidence.
+- Recency decay: intensity "now" fades with the age of the most recent
+  occurrence (we cannot know when an operation ends, only that staleness raises
+  the chance it has subsided). Kept distinct from feed freshness (`x-last-update`).
+
+Keep the deaths count as a single total (no civilian/agent split). Aggregated
+spatial concentration via a formula removes the need for the heavy clustering /
+SQLite tier for this goal.
+
+**2b - ISP chronic baseline (offline job).** Characterize an area's structural
+violence intensity, normalized and ranked across RJ municipalities:
+
+- Primary lens: police lethality (`hom_por_interv_policial`), per 100k, percentile.
+- Context / cross-check: violent lethality (`letalidade_violenta`), per 100k,
+  percentile. High violence with near-zero recorded police lethality flags
+  under-reporting; police lethality is treated as a floor, not the truth.
+- Drop attempted homicide. No opaque single composite: two transparent axes, with
+  an optional documented weighted level (e.g. 60% police / 40% violent) that
+  always shows its components.
+- Windows: typical = trailing 12 months (territorial control shifts faster than
+  24 months in Rio); recent = 6 months for trend. The truly-recent signal comes
+  from 2a, not here.
+- Source: ISP `BaseDPEvolucaoMensalCisp.csv` (monthly, has `munic` and `ano/mes`,
+  so it aggregates to municipality directly). Population for per-100k via SIDRA,
+  offline, inside the job. Prepared file as packaged JSON (SQLite only if a later
+  cluster layer needs SQL). ISP/RJ first; SINESP national later.
+- Under-reporting near communities is a first-class limitation in the response.
 
 ### Tier 3 - COR.Rio Corroboration
 
