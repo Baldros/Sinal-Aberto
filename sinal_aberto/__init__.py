@@ -1,4 +1,4 @@
-"""Sinal Aberto - servidor MCP de consulta a sinais de atividade armada/policial."""
+"""Sinal Aberto - MCP server for querying signs of armed or police activity."""
 
 __all__ = ["__version__"]
 

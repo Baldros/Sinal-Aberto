@@ -1,8 +1,9 @@
-"""Ferramenta `list_data_sources`.
+"""`list_data_sources` tool implementation.
 
-Lista as fontes do Sinal Aberto e seu estado. O Fogo Cruzado (unica fonte
-integrada) recebe uma sondagem de saude ao vivo; as demais sao listadas como
-validadas e ainda nao integradas, refletindo docs/validacao-fontes-secundarias.md.
+Lists Sinal Aberto sources and their status. Fogo Cruzado and IBGE Localidades
+are integrated and receive live health probes; the remaining sources are listed
+as validated but not yet integrated, reflecting
+docs/validacao-fontes-secundarias.md.
 """
 
 from __future__ import annotations
@@ -13,78 +14,78 @@ from ..adapters.fogocruzado import FogoCruzadoClient
 from ..adapters.ibge import IbgeLocalidadesClient
 from ..models import DataSourcesResult, DataSourceStatus
 
-# Catalogo estatico das fontes auxiliares validadas mas ainda nao integradas.
-# O IBGE Localidades saiu desta lista: foi promovido a fonte integrada (Tier 1).
+# Static catalog for auxiliary sources that were validated but are not integrated yet.
+# IBGE Localidades is no longer here because it was promoted to integrated Tier 1.
 _SECONDARY: tuple[dict, ...] = (
     {
         "name": "IBGE Malhas",
-        "role": "geometrias oficiais",
+        "role": "official geometries",
         "access_type": "API REST GeoJSON",
-        "coverage": "Brasil",
+        "coverage": "Brazil",
         "known_limitations": [
-            "HEAD responde 405; usar GET.",
-            "Validada; ainda nao usada nas respostas.",
+            "HEAD returns 405; use GET.",
+            "Validated; not used in responses yet.",
         ],
     },
     {
         "name": "ISP Dados RJ",
-        "role": "historico oficial de seguranca (RJ)",
+        "role": "official public-safety history for RJ",
         "access_type": "CKAN + download CSV/SHP/KML",
-        "coverage": "Estado do Rio de Janeiro",
+        "coverage": "Rio de Janeiro state",
         "known_limitations": [
-            "Dado historico/agregado, nao tempo real.",
-            "Validada; ainda nao usada nas respostas.",
+            "Historical/aggregate data, not real time.",
+            "Validated; not used in responses yet.",
         ],
     },
     {
         "name": "SINESP/MJSP",
-        "role": "historico nacional agregado",
+        "role": "aggregate national history",
         "access_type": "CKAN + download ZIP/XLSX",
-        "coverage": "Brasil",
+        "coverage": "Brazil",
         "known_limitations": [
-            "Agregado; nao serve para eventos em andamento.",
-            "Validada; ainda nao usada nas respostas.",
+            "Aggregate source; not suitable for ongoing events.",
+            "Validated; not used in responses yet.",
         ],
     },
     {
         "name": "DATA.RIO (ArcGIS)",
-        "role": "camadas urbanas do municipio do Rio",
+        "role": "urban layers for Rio de Janeiro city",
         "access_type": "ArcGIS REST/FeatureServer",
-        "coverage": "Municipio do Rio de Janeiro",
+        "coverage": "Rio de Janeiro city",
         "known_limitations": [
-            "Erro logico vem com HTTP 200 + chave 'error'.",
-            "Validada; ainda nao usada nas respostas.",
+            "Logical errors arrive as HTTP 200 plus an 'error' key.",
+            "Validated; not used in responses yet.",
         ],
     },
     {
         "name": "GTFS Rio",
-        "role": "mobilidade (linhas e paradas de onibus/BRT)",
-        "access_type": "Download ZIP (GTFS estatico)",
-        "coverage": "Municipio do Rio de Janeiro",
+        "role": "mobility context for bus/BRT routes and stops",
+        "access_type": "ZIP download (static GTFS)",
+        "coverage": "Rio de Janeiro city",
         "known_limitations": [
-            "GTFS estatico, nao tempo real.",
-            "Validada; ainda nao usada nas respostas.",
+            "Static GTFS, not real time.",
+            "Validated; not used in responses yet.",
         ],
     },
     {
         "name": "GPS SPPO",
-        "role": "contexto operacional de mobilidade",
-        "access_type": "REST com janela temporal",
-        "coverage": "Municipio do Rio de Janeiro",
+        "role": "operational mobility context",
+        "access_type": "REST with time-window filter",
+        "coverage": "Rio de Janeiro city",
         "known_limitations": [
-            "Content-Type text/html com corpo JSON.",
-            "Exige janela temporal curta.",
-            "Validada; ainda nao usada nas respostas.",
+            "Content-Type is text/html while the body is JSON.",
+            "Requires a short time window.",
+            "Validated; not used in responses yet.",
         ],
     },
     {
         "name": "COR.Rio",
-        "role": "contexto oficial (baixo peso)",
+        "role": "official context with low evidentiary weight",
         "access_type": "WordPress REST / RSS",
-        "coverage": "Municipio do Rio de Janeiro",
+        "coverage": "Rio de Janeiro city",
         "known_limitations": [
-            "Requer headers de navegador; WAF responde 403 sem eles.",
-            "Validada; ainda nao usada nas respostas.",
+            "Requires browser-like headers; the WAF returns 403 without them.",
+            "Validated; not used in responses yet.",
         ],
     },
 )
@@ -94,66 +95,67 @@ async def list_data_sources(
     client: FogoCruzadoClient,
     territory: IbgeLocalidadesClient | None = None,
 ) -> DataSourcesResult:
+    """Probe integrated sources and return the full source catalog."""
     query_time = datetime.now(timezone.utc)
     limitations = [
-        "Integradas as respostas: Fogo Cruzado (ocorrencias) e IBGE Localidades "
-        "(normalizacao territorial). As demais fontes estao validadas mas ainda "
-        "nao sao consultadas em tempo real."
+        "Integrated into responses: Fogo Cruzado (occurrences) and IBGE "
+        "Localidades (territorial normalization). Other sources are validated "
+        "but not queried in real time yet."
     ]
 
     try:
         last_update = await client.probe()
-        fogo_status = "operacional"
-    except Exception:  # noqa: BLE001 - qualquer falha vira status indisponivel
+        fogo_status = "operational"
+    except Exception:  # noqa: BLE001 - any probe failure becomes unavailable status
         last_update = None
-        fogo_status = "indisponivel"
+        fogo_status = "unavailable"
         limitations.append(
-            "Fogo Cruzado nao respondeu a sondagem de saude no momento da consulta."
+            "Fogo Cruzado did not respond to the health probe at query time."
         )
 
     sources = [
         DataSourceStatus(
             name="Fogo Cruzado",
-            role="fonte principal de ocorrencias armadas recentes",
+            role="primary source for recent armed occurrences",
             access_type="API REST (JWT)",
             status=fogo_status,
-            coverage="Regioes metropolitanas de Rio de Janeiro, Recife, Bahia e Para",
+            coverage="Metropolitan regions of Rio de Janeiro, Recife, Bahia, and Para",
             last_query_time=query_time,
             last_update_time=last_update,
             known_limitations=[
-                "Cobre tiroteios/disparos reportados; nao e radar completo de operacoes.",
-                "Operacoes sem disparos ou sem registro podem nao aparecer.",
+                "Covers reported shootings/gunfire; it is not a complete operations radar.",
+                "Operations without gunfire or reports may not appear.",
             ],
         )
     ]
 
-    ibge_status = "integrada"
+    ibge_status = "integrated"
     if territory is not None:
         try:
             await territory.probe()
-            ibge_status = "operacional"
-        except Exception:  # noqa: BLE001 - qualquer falha vira status indisponivel
-            ibge_status = "indisponivel"
+            ibge_status = "operational"
+        except Exception:  # noqa: BLE001 - any probe failure becomes unavailable status
+            ibge_status = "unavailable"
             limitations.append(
-                "IBGE Localidades nao respondeu a sondagem de saude no momento da consulta."
+                "IBGE Localidades did not respond to the health probe at query time."
             )
     sources.append(
         DataSourceStatus(
             name="IBGE Localidades",
-            role="normalizacao territorial oficial (Tier 1)",
+            role="official territorial normalization (Tier 1)",
             access_type="API REST JSON",
             status=ibge_status,
-            coverage="Brasil",
+            coverage="Brazil",
             last_query_time=query_time,
             known_limitations=[
-                "Enriquecimento descritivo: resolve codigo IBGE/UF/macrorregiao, "
-                "nao altera evidencia nem confianca.",
+                "Descriptive enrichment: resolves IBGE code/state/macro-region, "
+                "without changing evidence or confidence.",
             ],
         )
     )
 
     for source in _SECONDARY:
-        sources.append(DataSourceStatus(status="validada, nao integrada", **source))
+        sources.append(DataSourceStatus(status="validated, not integrated", **source))
 
     return DataSourcesResult(
         sources=sources, query_time=query_time, limitations=limitations

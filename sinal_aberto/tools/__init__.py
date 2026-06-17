@@ -1,1 +1,1 @@
-"""Implementacao das ferramentas MCP de consulta."""
+"""MCP query tool implementations."""

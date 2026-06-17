@@ -1,9 +1,10 @@
-"""Adaptador assincrono da API IBGE Localidades.
+"""Asynchronous adapter for the IBGE Localidades API.
 
-Fonte de normalizacao territorial oficial. Diferente do Fogo Cruzado, e publica e
-sem autenticacao: a malha municipal quase nao muda, entao o catalogo inteiro de
-municipios fica num cache longo em memoria (sem job, sem banco). As tools nao
-falam diretamente com a API: passam por aqui. Contrato validado em
+Official territorial-normalization source. Unlike Fogo Cruzado, this API is
+public and does not require authentication. Municipal metadata changes rarely,
+so the full municipality catalog is kept in a long in-memory cache, without a
+background job or database. Tools do not call the API directly; they go through
+this adapter. The contract is validated in
 tests/integration/test_ibge_localidades.py.
 """
 
@@ -14,12 +15,12 @@ from typing import Any
 
 import httpx
 
-# A malha municipal praticamente nao muda; um dia de cache e folgado.
+# Municipal metadata is effectively static for this workflow, so a one-day cache is safe.
 _DEFAULT_CATALOG_TTL_SECONDS = 86_400.0
 
 
 class IbgeError(RuntimeError):
-    """Falha ao consultar a API IBGE Localidades."""
+    """Raised when the IBGE Localidades API cannot be queried successfully."""
 
 
 class IbgeLocalidadesClient:
@@ -35,33 +36,37 @@ class IbgeLocalidadesClient:
         self._client = httpx.AsyncClient(
             base_url=base_url.rstrip("/"), timeout=timeout, transport=transport
         )
-        self._municipios: list[dict[str, Any]] | None = None
-        self._municipios_at = 0.0
+        self._municipalities: list[dict[str, Any]] | None = None
+        self._municipalities_at = 0.0
 
     async def aclose(self) -> None:
         await self._client.aclose()
 
-    async def get_municipios(self) -> list[dict[str, Any]]:
-        """Catalogo completo de municipios do Brasil, com cache longo.
+    async def get_municipalities(self) -> list[dict[str, Any]]:
+        """Return the full Brazilian municipality catalog with a long cache.
 
-        Cada item traz a hierarquia territorial (municipio > microrregiao >
-        mesorregiao > UF > regiao), de onde extraimos codigo IBGE, UF e macrorregiao.
+        Each item includes the territorial hierarchy (municipality >
+        micro-region > meso-region > state > region), which supplies the IBGE
+        code, state, and macro-region.
         """
         now = time.monotonic()
-        if self._municipios is not None and now < self._municipios_at + self._catalog_ttl:
-            return self._municipios
+        if (
+            self._municipalities is not None
+            and now < self._municipalities_at + self._catalog_ttl
+        ):
+            return self._municipalities
         response = await self._client.get("/municipios")
         if response.status_code != 200:
             raise IbgeError(f"/municipios status={response.status_code}")
-        municipios = response.json() or []
-        if not isinstance(municipios, list):
-            raise IbgeError("/municipios nao retornou uma lista")
-        self._municipios = municipios
-        self._municipios_at = now
-        return municipios
+        municipalities = response.json() or []
+        if not isinstance(municipalities, list):
+            raise IbgeError("/municipios did not return a list")
+        self._municipalities = municipalities
+        self._municipalities_at = now
+        return municipalities
 
     async def probe(self) -> None:
-        """Sonda de saude: confirma que o catalogo de municipios responde."""
-        municipios = await self.get_municipios()
-        if not municipios:
-            raise IbgeError("/municipios retornou vazio")
+        """Health probe: confirm the municipality catalog responds with data."""
+        municipalities = await self.get_municipalities()
+        if not municipalities:
+            raise IbgeError("/municipios returned an empty list")

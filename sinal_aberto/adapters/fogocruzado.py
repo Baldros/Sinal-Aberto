@@ -1,8 +1,8 @@
-"""Adaptador assincrono da API Fogo Cruzado.
+"""Asynchronous adapter for the Fogo Cruzado API.
 
-Encapsula autenticacao JWT (com cache de token em memoria), consulta de cidades
-(com cache curto) e de ocorrencias. As tools MCP nao falam diretamente com a API:
-passam por aqui. Contrato dos endpoints validado em
+Encapsulates JWT authentication with in-memory token caching, city lookup with a
+short catalog cache, and occurrence queries. MCP tools do not call the API
+directly; they go through this adapter. Endpoint contracts are validated in
 tests/integration/test_fogocruzado_api.py.
 """
 
@@ -15,13 +15,13 @@ from typing import Any
 
 import httpx
 
-# Margem de seguranca para renovar o token antes de expirar.
+# Safety margin used to refresh the token before the API expiration boundary.
 _TOKEN_REFRESH_MARGIN_SECONDS = 30.0
 _DEFAULT_TOKEN_TTL_SECONDS = 3600.0
 
 
 def parse_api_datetime(value: str | None) -> datetime | None:
-    """Converte um timestamp da API em datetime aware (UTC quando sem tz)."""
+    """Convert an API timestamp into a timezone-aware datetime."""
     if not value:
         return None
     text = value.strip()
@@ -43,7 +43,7 @@ def parse_api_datetime(value: str | None) -> datetime | None:
 
 
 class FogoCruzadoError(RuntimeError):
-    """Falha ao consultar a API Fogo Cruzado."""
+    """Raised when the Fogo Cruzado API cannot be queried successfully."""
 
 
 class FogoCruzadoClient:
@@ -72,19 +72,20 @@ class FogoCruzadoClient:
     async def aclose(self) -> None:
         await self._client.aclose()
 
-    # -- autenticacao ----------------------------------------------------
+    # -- authentication --------------------------------------------------
 
     async def _login(self) -> None:
+        """Authenticate once and store the token plus its monotonic expiry."""
         response = await self._client.post(
             "/auth/login",
             json={"email": self._email, "password": self._password},
         )
         if response.status_code != 201:
-            raise FogoCruzadoError(f"Login falhou: status={response.status_code}")
+            raise FogoCruzadoError(f"Login failed: status={response.status_code}")
         data = (response.json() or {}).get("data") or {}
         token = data.get("accessToken")
         if not token:
-            raise FogoCruzadoError("Login nao retornou accessToken")
+            raise FogoCruzadoError("Login did not return accessToken")
         try:
             ttl = float(data.get("expiresIn"))
         except (TypeError, ValueError):
@@ -96,6 +97,7 @@ class FogoCruzadoClient:
         return bool(self._token) and time.monotonic() < self._token_expiry - _TOKEN_REFRESH_MARGIN_SECONDS
 
     async def _ensure_token(self) -> str:
+        """Return a valid bearer token, serializing refreshes across coroutines."""
         if self._token_valid():
             return self._token  # type: ignore[return-value]
         async with self._auth_lock:
@@ -110,7 +112,7 @@ class FogoCruzadoClient:
             path, params=params, headers={"Authorization": f"Bearer {token}"}
         )
         if response.status_code == 401:
-            # Token rejeitado: forca novo login uma vez.
+            # A rejected token gets one forced re-login before returning the response.
             self._token = None
             token = await self._ensure_token()
             response = await self._client.get(
@@ -118,9 +120,10 @@ class FogoCruzadoClient:
             )
         return response
 
-    # -- consultas -------------------------------------------------------
+    # -- queries ---------------------------------------------------------
 
     async def get_cities(self) -> list[dict[str, Any]]:
+        """Return the city catalog, using the short in-memory cache when fresh."""
         now = time.monotonic()
         if self._cities is not None and now < self._cities_at + self._catalog_ttl:
             return self._cities
@@ -135,6 +138,7 @@ class FogoCruzadoClient:
     async def get_occurrences(
         self, params: dict[str, Any]
     ) -> tuple[list[dict[str, Any]], dict[str, Any], datetime | None]:
+        """Query occurrences and return rows, pagination metadata, and update time."""
         response = await self._get("/occurrences", params=params)
         if response.status_code != 200:
             raise FogoCruzadoError(f"/occurrences status={response.status_code}")
@@ -145,7 +149,7 @@ class FogoCruzadoClient:
         return data, page_meta, last_update
 
     async def probe(self) -> datetime | None:
-        """Sonda de saude: confirma autenticacao e tenta ler a ultima atualizacao."""
+        """Health probe: authenticate and try to read the latest update timestamp."""
         await self._ensure_token()
         try:
             _data, _meta, last_update = await self.get_occurrences(

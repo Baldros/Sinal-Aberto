@@ -1,9 +1,9 @@
-"""Ferramenta `get_recent_activity`.
+"""`get_recent_activity` tool implementation.
 
-Consulta sinais recentes de atividade armada/policial em uma cidade e retorna um
-resumo rastreavel. A API filtra ocorrencias por data (granularidade de dia), entao
-buscamos as mais recentes do periodo e refinamos a janela exata (minutos/horas) no
-proprio codigo.
+Queries recent signs of armed or police activity in a city and returns a
+traceable summary. The API filters occurrences by date with day-level
+granularity, so this module fetches recent records for the period and refines
+the exact minute/hour window in application code.
 """
 
 from __future__ import annotations
@@ -17,15 +17,16 @@ from ..adapters.ibge import IbgeLocalidadesClient
 from ..models import RecentActivityResult, RecentOccurrence, SourceRef, TerritorialContext
 from .territory import resolve_territory, slugify
 
-FONTE_URL = "https://api.fogocruzado.org.br/"
+SOURCE_URL = "https://api.fogocruzado.org.br/"
 IBGE_URL = "https://servicodados.ibge.gov.br/api/v1/localidades"
 MAX_WINDOW = timedelta(days=7)
 MAX_FETCH = 50
 _WINDOW_RE = re.compile(r"^\s*(\d+)\s*([mhd])\s*$", re.IGNORECASE)
-_DEATH_TOKENS = ("mort", "obito", "óbito", "dead", "fatal")
+_DEATH_TOKENS = ("mort", "obito", "\u00f3bito", "dead", "fatal")
 
 
 def _parse_window(value: str | None) -> tuple[timedelta, str, bool]:
+    """Parse compact time windows such as 30m, 1h, and 2d."""
     match = _WINDOW_RE.match(value or "")
     if not match:
         return timedelta(hours=1), "1h", False
@@ -40,6 +41,7 @@ def _parse_window(value: str | None) -> tuple[timedelta, str, bool]:
 
 
 def _label(value: Any) -> str | None:
+    """Extract the human-readable API label from a reference object or raw string."""
     if isinstance(value, dict):
         return value.get("name")
     if isinstance(value, str):
@@ -48,6 +50,7 @@ def _label(value: Any) -> str | None:
 
 
 def _parse_dt(value: str | None) -> datetime | None:
+    """Parse an API datetime and ensure the result is timezone-aware."""
     try:
         parsed = datetime.fromisoformat((value or "").replace("Z", "+00:00"))
     except ValueError:
@@ -58,6 +61,7 @@ def _parse_dt(value: str | None) -> datetime | None:
 
 
 def _normalize(occ: dict[str, Any]) -> RecentOccurrence:
+    """Convert a raw Fogo Cruzado occurrence into the public MCP response shape."""
     context = occ.get("contextInfo") or {}
     victims = occ.get("victims") or []
     deaths = 0
@@ -87,7 +91,7 @@ def _assess(
 ) -> tuple[str, str, str]:
     count = len(recent)
     if count == 0:
-        return "sem evidencia recente", "baixa", "Nenhum registro recente na janela consultada."
+        return "no recent evidence", "low", "No recent records in the requested window."
 
     ages = [o.occurred_at for o in recent if o.occurred_at]
     newest = max(ages) if ages else None
@@ -99,28 +103,28 @@ def _assess(
     deaths = sum(o.deaths_count for o in recent)
 
     if count >= 5 or (count >= 2 and fresh):
-        evidence = "alta evidencia"
+        evidence = "high evidence"
     elif count >= 2 or (age_min is not None and age_min <= 180):
-        evidence = "evidencia moderada"
+        evidence = "moderate evidence"
     else:
-        evidence = "baixa evidencia"
+        evidence = "low evidence"
 
     if count >= 5 and fresh:
-        confidence = "alta"
+        confidence = "high"
     elif count >= 2:
-        confidence = "media"
+        confidence = "medium"
     else:
-        confidence = "baixa"
+        confidence = "low"
 
-    parts = [f"{count} registro(s) recente(s)"]
+    parts = [f"{count} recent record(s)"]
     if age_min is not None:
-        parts.append(f"mais recente ha ~{int(age_min)} min")
+        parts.append(f"latest ~{int(age_min)} min ago")
     if police:
-        parts.append(f"{police} com acao policial")
+        parts.append(f"{police} with police action")
     if victims:
-        victim_part = f"{victims} vitima(s)"
+        victim_part = f"{victims} victim(s)"
         if deaths:
-            victim_part += f", {deaths} obito(s)"
+            victim_part += f", {deaths} death(s)"
         parts.append(victim_part)
     summary = "; ".join(parts) + "."
     return evidence, confidence, summary
@@ -135,25 +139,26 @@ async def _resolve_territory(
     sources: list[SourceRef],
     limitations: list[str],
 ) -> TerritorialContext | None:
-    """Enriquecimento territorial (IBGE), isolado e tolerante a falha.
+    """Resolve optional IBGE territorial enrichment without blocking the tool.
 
-    Falha ou ausencia da fonte vira campo nulo + limitacao; nunca quebra a tool.
-    E descritivo: nao altera evidencia nem confianca.
+    Source failures or missing data become a null field plus a limitation; they
+    never fail the main activity query. The enrichment is descriptive and does
+    not change evidence or confidence.
     """
     if territory is None:
         return None
     try:
-        municipios = await territory.get_municipios()
-    except Exception:  # noqa: BLE001 - normalizacao e opcional; degrada sem quebrar
+        municipalities = await territory.get_municipalities()
+    except Exception:  # noqa: BLE001 - optional enrichment degrades without failing
         limitations.append(
-            "Normalizacao territorial (IBGE) indisponivel; codigo oficial nao resolvido."
+            "Territorial normalization (IBGE) unavailable; official code not resolved."
         )
         return None
 
-    context = resolve_territory(municipios, name, uf=uf)
+    context = resolve_territory(municipalities, name, uf=uf)
     if context is None:
         limitations.append(
-            "Nao foi possivel resolver o codigo IBGE oficial para a cidade consultada."
+            "Could not resolve the official IBGE code for the requested city."
         )
         return None
 
@@ -165,9 +170,9 @@ async def _resolve_territory(
             url=IBGE_URL,
         )
     )
-    if context.match_quality == "ambiguo":
+    if context.match_quality == "ambiguous":
         limitations.append(
-            "Normalizacao territorial ambigua; verifique a UF do municipio resolvido."
+            "Territorial normalization is ambiguous; verify the resolved city state."
         )
     return context
 
@@ -180,16 +185,17 @@ async def get_recent_activity(
     time_window: str = "1h",
     territory: IbgeLocalidadesClient | None = None,
 ) -> RecentActivityResult:
+    """Fetch, filter, normalize, and assess recent Fogo Cruzado activity."""
     query_time = datetime.now(timezone.utc)
     window, window_label, ok = _parse_window(time_window)
     limitations: list[str] = []
     if not ok:
         limitations.append(
-            f"time_window '{time_window}' invalido; usando 1h. Use formatos como 30m, 1h, 24h."
+            f"time_window '{time_window}' is invalid; using 1h. Use formats like 30m, 1h, 24h."
         )
     if window > MAX_WINDOW:
         window, window_label = MAX_WINDOW, "7d"
-        limitations.append("Janela limitada a 7d nesta versao.")
+        limitations.append("Time window capped at 7d in this version.")
     cutoff = query_time - window
 
     sources = [
@@ -197,10 +203,11 @@ async def get_recent_activity(
             name="Fogo Cruzado",
             access_type="API REST (JWT)",
             queried_at=query_time,
-            url=FONTE_URL,
+            url=SOURCE_URL,
         )
     ]
 
+    # City matching stays permissive for user input, but ambiguity is surfaced.
     cities = await client.get_cities()
     normalized_city = slugify(city)
     exact = [c for c in cities if slugify(c.get("name")) == normalized_city]
@@ -215,11 +222,11 @@ async def get_recent_activity(
             time_window=window_label,
             query_time=query_time,
             occurrence_count=0,
-            activity_summary=f"Cidade '{city}' nao encontrada no catalogo do Fogo Cruzado.",
-            evidence_level="sem evidencia",
-            confidence_level="baixa",
+            activity_summary=f"City '{city}' was not found in the Fogo Cruzado catalog.",
+            evidence_level="no evidence",
+            confidence_level="low",
             limitations=limitations
-            + ["Cidade nao encontrada; verifique o nome ou a cobertura da fonte."],
+            + ["City not found; verify the name or the source coverage."],
             sources=sources,
         )
 
@@ -228,9 +235,9 @@ async def get_recent_activity(
             {f"{c.get('name')} ({_label(c.get('state'))})" for c in matches}
         )[:5]
         limitations.append(
-            "Mais de uma cidade corresponde a '"
-            f"{city}'. Usando a primeira; especifique a regiao/UF. "
-            f"Candidatas: {', '.join(candidates)}."
+            "More than one city matches '"
+            f"{city}'. Using the first one; specify the region/state. "
+            f"Candidates: {', '.join(candidates)}."
         )
 
     target = matches[0]
@@ -258,6 +265,7 @@ async def get_recent_activity(
     data, page_meta, last_update = await client.get_occurrences(params)
     sources[0].last_update_time = last_update
 
+    # The API may return a whole date range; this enforces the exact time window.
     recent: list[RecentOccurrence] = []
     for occ in data:
         occurred_at = _parse_dt(occ.get("date"))
@@ -277,12 +285,12 @@ async def get_recent_activity(
         ]
         if before and not recent:
             limitations.append(
-                f"Nenhum registro recente na regiao '{region}' dentro da janela."
+                f"No recent records in region '{region}' within the requested window."
             )
 
     if page_meta.get("hasNextPage"):
         limitations.append(
-            f"Mais de {MAX_FETCH} ocorrencias no periodo; mostrando as mais recentes."
+            f"More than {MAX_FETCH} occurrences in the period; showing the most recent ones."
         )
 
     evidence, confidence, summary = _assess(recent, query_time)
@@ -293,12 +301,12 @@ async def get_recent_activity(
         newest_age = round((query_time - max(ages)).total_seconds() / 60.0, 1)
 
     limitations.append(
-        "Niveis de evidencia/confianca sao heuristicos preliminares; nao "
-        "representam probabilidade calibrada."
+        "Evidence/confidence levels are preliminary heuristics; they do not "
+        "represent calibrated probability."
     )
     limitations.append(
-        "A fonte cobre tiroteios/disparos reportados; operacoes sem registro "
-        "podem nao aparecer."
+        "The source covers reported shootings/gunfire; unreported operations "
+        "may not appear."
     )
 
     return RecentActivityResult(

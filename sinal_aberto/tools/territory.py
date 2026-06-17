@@ -1,9 +1,10 @@
-"""Resolucao territorial: casa a cidade pedida com o municipio oficial do IBGE.
+"""Territory resolution: match the requested city to the official IBGE city.
 
-Funcoes puras, sem rede: recebem o catalogo de municipios (entregue pelo
-`IbgeLocalidadesClient`) e devolvem um `TerritorialContext`. A normalizacao por
-slug (sem acento, sem caixa) torna o casamento robusto a "Sao Goncalo" vs
-"Sao Goncalo" e desambigua por UF quando o nome se repete entre estados.
+These are pure, offline functions: they receive the municipality catalog from
+`IbgeLocalidadesClient` and return a `TerritorialContext`. Slug normalization
+removes accents and case differences, making matches robust to accented and
+unaccented user input and allowing state-based disambiguation when city names
+repeat across states.
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ from ..models import TerritorialContext
 
 
 def slugify(text: str | None) -> str:
-    """Normaliza para comparacao: sem acento, minusculo, espacos colapsados."""
+    """Normalize text for comparison: ASCII accents stripped, lowercase, compact spaces."""
     if not text:
         return ""
     decomposed = unicodedata.normalize("NFKD", text)
@@ -23,74 +24,77 @@ def slugify(text: str | None) -> str:
     return " ".join(ascii_text.casefold().split())
 
 
-def _uf_node(municipio: dict[str, Any]) -> dict[str, Any]:
+def _uf_node(municipality: dict[str, Any]) -> dict[str, Any]:
     return (
-        ((municipio.get("microrregiao") or {}).get("mesorregiao") or {}).get("UF")
+        ((municipality.get("microrregiao") or {}).get("mesorregiao") or {}).get("UF")
         or {}
     )
 
 
-def _uf_sigla(municipio: dict[str, Any]) -> str | None:
-    return _uf_node(municipio).get("sigla")
+def _uf_abbreviation(municipality: dict[str, Any]) -> str | None:
+    return _uf_node(municipality).get("sigla")
 
 
-def _uf_nome(municipio: dict[str, Any]) -> str | None:
-    return _uf_node(municipio).get("nome")
+def _uf_name(municipality: dict[str, Any]) -> str | None:
+    return _uf_node(municipality).get("nome")
 
 
-def _macro_region(municipio: dict[str, Any]) -> str | None:
-    return (_uf_node(municipio).get("regiao") or {}).get("nome")
+def _macro_region(municipality: dict[str, Any]) -> str | None:
+    return (_uf_node(municipality).get("regiao") or {}).get("nome")
 
 
-def _matches_uf(municipio: dict[str, Any], uf_slug: str) -> bool:
-    """Compara a UF pedida contra a sigla OU o nome (o Fogo Cruzado manda o nome)."""
-    return uf_slug in (slugify(_uf_sigla(municipio)), slugify(_uf_nome(municipio)))
+def _matches_uf(municipality: dict[str, Any], uf_slug: str) -> bool:
+    """Compare the requested state against either abbreviation or name."""
+    return uf_slug in (
+        slugify(_uf_abbreviation(municipality)),
+        slugify(_uf_name(municipality)),
+    )
 
 
-def _to_context(municipio: dict[str, Any], match_quality: str) -> TerritorialContext:
-    code = municipio.get("id")
+def _to_context(municipality: dict[str, Any], match_quality: str) -> TerritorialContext:
+    code = municipality.get("id")
     return TerritorialContext(
         ibge_city_code=int(code) if isinstance(code, int) or str(code).isdigit() else None,
-        resolved_name=municipio.get("nome"),
-        uf=_uf_sigla(municipio),
-        macro_region=_macro_region(municipio),
+        resolved_name=municipality.get("nome"),
+        uf=_uf_abbreviation(municipality),
+        macro_region=_macro_region(municipality),
         match_quality=match_quality,
     )
 
 
 def resolve_territory(
-    municipios: list[dict[str, Any]],
+    municipalities: list[dict[str, Any]],
     name: str,
     uf: str | None = None,
 ) -> TerritorialContext | None:
-    """Resolve a cidade no catalogo do IBGE.
+    """Resolve a city inside the IBGE municipality catalog.
 
-    Estrategia: casamento exato por slug; se houver UF (sigla ou nome), usa-a para
-    desambiguar. Sem casamento exato, tenta prefixo/substring ("aproximado"). Sem
-    nenhum, devolve None. Multiplos exatos que a UF nao resolve viram "ambiguo".
+    Strategy: exact slug match first; if a state abbreviation or name is
+    available, use it to disambiguate. Without an exact match, fall back to a
+    substring match. Multiple unresolved matches are reported as ambiguous.
     """
     target = slugify(name)
     if not target:
         return None
     uf_slug = slugify(uf)
 
-    exact = [m for m in municipios if slugify(m.get("nome")) == target]
+    exact = [m for m in municipalities if slugify(m.get("nome")) == target]
     if uf_slug:
         narrowed = [m for m in exact if _matches_uf(m, uf_slug)]
         if narrowed:
             exact = narrowed
     if len(exact) == 1:
-        return _to_context(exact[0], "exato")
+        return _to_context(exact[0], "exact")
     if len(exact) > 1:
-        return _to_context(exact[0], "ambiguo")
+        return _to_context(exact[0], "ambiguous")
 
-    approx = [m for m in municipios if target in slugify(m.get("nome"))]
+    approx = [m for m in municipalities if target in slugify(m.get("nome"))]
     if uf_slug:
         narrowed = [m for m in approx if _matches_uf(m, uf_slug)]
         if narrowed:
             approx = narrowed
     if len(approx) >= 1:
-        quality = "aproximado" if len(approx) == 1 else "ambiguo"
+        quality = "approximate" if len(approx) == 1 else "ambiguous"
         return _to_context(approx[0], quality)
 
     return None
