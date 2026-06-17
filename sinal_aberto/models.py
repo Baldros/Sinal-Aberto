@@ -26,6 +26,7 @@ MatchQuality = Literal["exact", "approximate", "ambiguous"]
 ResolutionStatus = Literal["resolved", "ambiguous", "approximate", "not_found"]
 SpatialConcentration = Literal["concentrated", "localized", "dispersed", "indeterminate"]
 RecencySignal = Literal["very recent", "recent", "cooling", "likely subsided"]
+RelativeLevel = Literal["below", "typical", "above", "well above", "indeterminate"]
 SourceState = Literal[
     "operational",
     "unavailable",
@@ -202,6 +203,54 @@ class CorroboratingReport(BaseModel):
     url: str | None = Field(default=None, description="Link to the official bulletin.")
 
 
+class IndicatorBaseline(BaseModel):
+    """Historical levels for one ISP indicator in a municipality."""
+
+    typical_monthly: float | None = Field(
+        default=None, description="Average monthly count over the typical window (12 months)."
+    )
+    recent_monthly: float | None = Field(
+        default=None, description="Average monthly count over the recent window (6 months)."
+    )
+    per_100k_annual: float | None = Field(
+        default=None, description="Annualized rate per 100k inhabitants (typical window)."
+    )
+    percentile: float | None = Field(
+        default=None,
+        description="Rank in [0,1] of the per-100k rate across RJ municipalities (1 = highest).",
+    )
+
+
+class HistoricalBaseline(BaseModel):
+    """ISP historical context for the area's chronic violence intensity.
+
+    Descriptive (Phase A): a separate axis from the live signal. It never changes
+    evidence or confidence, and it is ISP-internal (recent vs the area's own
+    typical), never a same-unit comparison against the live Fogo Cruzado count.
+    Rio de Janeiro state only.
+    """
+
+    source: str = Field(default="ISP Dados RJ", description='Always "ISP Dados RJ".')
+    ibge_city_code: int | None = Field(default=None, description="Municipality IBGE code.")
+    population: int | None = Field(default=None, description="Population used for per-100k (IBGE/SIDRA).")
+    police_lethality: IndicatorBaseline = Field(
+        description="Deaths by police intervention — the primary operation-lethality lens."
+    )
+    violent_lethality: IndicatorBaseline = Field(
+        description="Overall violent lethality — context and an under-reporting cross-check."
+    )
+    relative_level: RelativeLevel = Field(
+        description=(
+            "Police lethality in the recent window vs the area's own typical level: "
+            '"below"/"typical"/"above"/"well above". Chronic trend, not a live-event claim.'
+        )
+    )
+    typical_window: str = Field(description="Label of the typical window, e.g. '12 months ending 2026-03'.")
+    recent_window: str = Field(description="Label of the recent window, e.g. '6 months ending 2026-03'.")
+    as_of: str | None = Field(default=None, description="Latest ISP period covered, e.g. '2026-03'.")
+    note: str = Field(description="Plain-language summary and the under-reporting caveat.")
+
+
 class OperationProfile(BaseModel):
     """Recent-intensity profile derived from Fogo Cruzado occurrences.
 
@@ -300,6 +349,14 @@ class RecentActivityResult(BaseModel):
             "Recent-intensity profile (massacre flag, distinct police units, spatial "
             "concentration, recency). Descriptive context; does not change evidence or "
             "confidence. Null when there are no occurrences in the window."
+        ),
+    )
+    historical_baseline: HistoricalBaseline | None = Field(
+        default=None,
+        description=(
+            "ISP chronic violence-intensity context for the area (Rio de Janeiro "
+            "state only). Descriptive context on a separate axis; does not change "
+            "evidence or confidence. Null outside RJ or when unavailable."
         ),
     )
     recent_occurrences: list[RecentOccurrence] = Field(

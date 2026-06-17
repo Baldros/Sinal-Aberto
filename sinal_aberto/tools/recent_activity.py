@@ -22,6 +22,7 @@ from ..models import (
     SourceRef,
     TerritorialContext,
 )
+from .baseline import BaselineStore
 from .corroboration import collect_terms, match_reports
 from .operations import build_operation_profile
 from .territory import resolve_territory, slugify
@@ -29,6 +30,7 @@ from .territory import resolve_territory, slugify
 SOURCE_URL = "https://api.fogocruzado.org.br/"
 IBGE_URL = "https://servicodados.ibge.gov.br/api/v1/localidades"
 COR_RIO_URL = "https://cor.rio/"
+ISP_URL = "https://www.ispdados.rj.gov.br/"
 COR_RIO_IBGE_CODE = 3304557
 MAX_WINDOW = timedelta(days=7)
 MAX_FETCH = 50
@@ -253,6 +255,7 @@ async def get_recent_activity(
     time_window: str = "1h",
     territory: IbgeLocalidadesClient | None = None,
     corroboration: CorRioClient | None = None,
+    baseline: BaselineStore | None = None,
 ) -> RecentActivityResult:
     """Fetch, filter, normalize, and assess recent Fogo Cruzado activity."""
     query_time = datetime.now(timezone.utc)
@@ -318,6 +321,20 @@ async def get_recent_activity(
         sources=sources,
         limitations=limitations,
     )
+
+    # ISP chronic baseline (RJ only; the prepared file is RJ-keyed). Descriptive.
+    historical_baseline = None
+    if baseline is not None and territorial_context and territorial_context.ibge_city_code:
+        historical_baseline = baseline.lookup(territorial_context.ibge_city_code)
+        if historical_baseline is not None:
+            sources.append(
+                SourceRef(
+                    name="ISP Dados RJ",
+                    access_type="CKAN + CSV (prepared offline)",
+                    queried_at=query_time,
+                    url=ISP_URL,
+                )
+            )
 
     params: dict[str, Any] = {
         "page": 1,
@@ -415,6 +432,7 @@ async def get_recent_activity(
         territorial_context=territorial_context,
         corroborating_reports=corroborating_reports,
         operation_profile=operation_profile,
+        historical_baseline=historical_baseline,
         recent_occurrences=recent,
         limitations=limitations,
         sources=sources,

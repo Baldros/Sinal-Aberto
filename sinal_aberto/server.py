@@ -17,6 +17,7 @@ from .adapters.fogocruzado import FogoCruzadoClient
 from .adapters.ibge import IbgeLocalidadesClient
 from .config import get_settings
 from .models import DataSourcesResult, LocationResolution, RecentActivityResult
+from .tools.baseline import BaselineStore
 from .tools.data_sources import list_data_sources as _list_data_sources
 from .tools.locations import resolve_location as _resolve_location
 from .tools.recent_activity import get_recent_activity as _get_recent_activity
@@ -50,6 +51,7 @@ mcp = FastMCP(
 _client: FogoCruzadoClient | None = None
 _ibge_client: IbgeLocalidadesClient | None = None
 _cor_rio_client: CorRioClient | None = None
+_baseline_store: BaselineStore | None = None
 
 
 def _get_client() -> FogoCruzadoClient:
@@ -93,6 +95,14 @@ def _get_cor_rio_client() -> CorRioClient:
     return _cor_rio_client
 
 
+def _get_baseline_store() -> BaselineStore:
+    """Load the prepared ISP baseline once; degrades to empty if the file is absent."""
+    global _baseline_store
+    if _baseline_store is None:
+        _baseline_store = BaselineStore()
+    return _baseline_store
+
+
 @mcp.tool(annotations={"readOnlyHint": True, "openWorldHint": True})
 async def get_recent_activity(
     city: str,
@@ -127,6 +137,7 @@ async def get_recent_activity(
         time_window=time_window,
         territory=_get_ibge_client(),
         corroboration=_get_cor_rio_client(),
+        baseline=_get_baseline_store(),
     )
 
 
