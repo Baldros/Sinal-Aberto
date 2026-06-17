@@ -24,6 +24,8 @@ EvidenceLevel = Literal[
 ConfidenceLevel = Literal["low", "medium", "high"]
 MatchQuality = Literal["exact", "approximate", "ambiguous"]
 ResolutionStatus = Literal["resolved", "ambiguous", "approximate", "not_found"]
+SpatialConcentration = Literal["concentrated", "localized", "dispersed", "indeterminate"]
+RecencySignal = Literal["very recent", "recent", "cooling", "likely subsided"]
 SourceState = Literal[
     "operational",
     "unavailable",
@@ -84,6 +86,10 @@ class RecentOccurrence(BaseModel):
     transport_interrupted: bool = Field(
         default=False,
         description="Whether public transport was reported interrupted nearby.",
+    )
+    massacre: bool = Field(
+        default=False,
+        description="Whether the source flagged this occurrence as a massacre (high severity).",
     )
 
 
@@ -196,6 +202,45 @@ class CorroboratingReport(BaseModel):
     url: str | None = Field(default=None, description="Link to the official bulletin.")
 
 
+class OperationProfile(BaseModel):
+    """Recent-intensity profile derived from Fogo Cruzado occurrences.
+
+    Descriptive context (Phase A): it characterizes how intense/operation-like
+    recent activity looks, without changing evidence or confidence. Spatial output
+    is coarse by design; exact coordinates are never exposed.
+    """
+
+    massacre_flagged: bool = Field(
+        description="Whether any occurrence in the window was flagged as a massacre."
+    )
+    distinct_police_units: int = Field(
+        description=(
+            "Number of distinct police units seen in the window. Several distinct "
+            "units suggests a larger, coordinated operation. 0 when unreported."
+        )
+    )
+    spatial_concentration: SpatialConcentration = Field(
+        description=(
+            'How clustered the occurrences are. "concentrated"/"localized"/"dispersed" '
+            'by spread; "indeterminate" when too few are geocoded. Note: the source '
+            'approximates coordinates, so "dispersed" is reliable but a tight cluster '
+            "may be a geocoding artifact and is lower confidence."
+        )
+    )
+    approx_spread_m: int | None = Field(
+        default=None,
+        description="Approximate spread (diameter) in meters, rounded coarse. Null if indeterminate.",
+    )
+    recency_signal: RecencySignal = Field(
+        description=(
+            "How current the activity looks, by age of the most recent occurrence: "
+            '"very recent" -> "likely subsided". We cannot know when an operation '
+            "ends; staleness only raises the chance it is over."
+        )
+    )
+    note: str = Field(description="Plain-language summary of the profile and its caveats.")
+
+
 class RecentActivityResult(BaseModel):
     """Result returned by `get_recent_activity`."""
 
@@ -247,6 +292,14 @@ class RecentActivityResult(BaseModel):
             "activity was reported nearby—NOT confirmation of a specific occurrence. "
             "Present it as context; it does not change evidence or confidence. Empty "
             "for other cities or when nothing relevant matches."
+        ),
+    )
+    operation_profile: OperationProfile | None = Field(
+        default=None,
+        description=(
+            "Recent-intensity profile (massacre flag, distinct police units, spatial "
+            "concentration, recency). Descriptive context; does not change evidence or "
+            "confidence. Null when there are no occurrences in the window."
         ),
     )
     recent_occurrences: list[RecentOccurrence] = Field(

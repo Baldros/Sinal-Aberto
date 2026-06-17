@@ -23,6 +23,7 @@ from ..models import (
     TerritorialContext,
 )
 from .corroboration import collect_terms, match_reports
+from .operations import build_operation_profile
 from .territory import resolve_territory, slugify
 
 SOURCE_URL = "https://api.fogocruzado.org.br/"
@@ -93,6 +94,7 @@ def _normalize(occ: dict[str, Any]) -> RecentOccurrence:
         victims_count=len(victims),
         deaths_count=deaths,
         transport_interrupted=any(t.get("interruptedTransport") for t in transports),
+        massacre=bool(context.get("massacre")),
     )
 
 
@@ -333,23 +335,29 @@ async def get_recent_activity(
     sources[0].last_update_time = last_update
 
     # The API may return a whole date range; this enforces the exact time window.
+    # Raw dicts are kept aligned with the normalized list for internal-only signals
+    # (coordinates, police units) that never reach the public response.
+    raw_recent: list[dict[str, Any]] = []
     recent: list[RecentOccurrence] = []
     for occ in data:
         occurred_at = _parse_dt(occ.get("date"))
         if occurred_at is not None and occurred_at >= cutoff:
+            raw_recent.append(occ)
             recent.append(_normalize(occ))
 
     region_filter = (region or "").strip().casefold()
     if region_filter:
         before = len(recent)
-        recent = [
-            o
-            for o in recent
+        kept = [
+            (raw, norm)
+            for raw, norm in zip(raw_recent, recent)
             if any(
                 region_filter in (label or "").casefold()
-                for label in (o.neighborhood, o.sub_neighborhood, o.locality)
+                for label in (norm.neighborhood, norm.sub_neighborhood, norm.locality)
             )
         ]
+        raw_recent = [raw for raw, _ in kept]
+        recent = [norm for _, norm in kept]
         if before and not recent:
             limitations.append(
                 f"No recent records in region '{region}' within the requested window."
@@ -382,6 +390,8 @@ async def get_recent_activity(
     if ages:
         newest_age = round((query_time - max(ages)).total_seconds() / 60.0, 1)
 
+    operation_profile = build_operation_profile(raw_recent, recent, newest_age)
+
     limitations.append(
         "Evidence/confidence levels are preliminary heuristics; they do not "
         "represent calibrated probability."
@@ -404,6 +414,7 @@ async def get_recent_activity(
         confidence_level=confidence,
         territorial_context=territorial_context,
         corroborating_reports=corroborating_reports,
+        operation_profile=operation_profile,
         recent_occurrences=recent,
         limitations=limitations,
         sources=sources,
