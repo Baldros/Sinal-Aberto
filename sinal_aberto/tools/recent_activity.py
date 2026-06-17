@@ -12,13 +12,23 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from ..adapters.cor_rio import CorRioClient
 from ..adapters.fogocruzado import FogoCruzadoClient
 from ..adapters.ibge import IbgeLocalidadesClient
-from ..models import RecentActivityResult, RecentOccurrence, SourceRef, TerritorialContext
+from ..models import (
+    CorroboratingReport,
+    RecentActivityResult,
+    RecentOccurrence,
+    SourceRef,
+    TerritorialContext,
+)
+from .corroboration import collect_terms, match_reports
 from .territory import resolve_territory, slugify
 
 SOURCE_URL = "https://api.fogocruzado.org.br/"
 IBGE_URL = "https://servicodados.ibge.gov.br/api/v1/localidades"
+COR_RIO_URL = "https://cor.rio/"
+COR_RIO_IBGE_CODE = 3304557
 MAX_WINDOW = timedelta(days=7)
 MAX_FETCH = 50
 _WINDOW_RE = re.compile(r"^\s*(\d+)\s*([mhd])\s*$", re.IGNORECASE)
@@ -177,6 +187,62 @@ async def _resolve_territory(
     return context
 
 
+async def _corroborate(
+    corroboration: CorRioClient | None,
+    *,
+    is_rio: bool,
+    region: str | None,
+    occurrences: list[RecentOccurrence],
+    window: timedelta,
+    query_time: datetime,
+    sources: list[SourceRef],
+    limitations: list[str],
+) -> list[CorroboratingReport]:
+    """Optional COR.Rio corroboration, isolated and failure-tolerant.
+
+    Rio de Janeiro only. Descriptive (Phase A): does not change evidence or
+    confidence. An unavailable source, or nothing matching, degrades to an empty
+    list; the main response never breaks.
+    """
+    if corroboration is None or not is_rio:
+        return []
+    terms = collect_terms(region, occurrences)
+    if not terms:
+        return []
+    try:
+        posts = await corroboration.get_recent_posts()
+    except Exception:  # noqa: BLE001 - corroboration is optional; never breaks the tool
+        limitations.append(
+            "COR.Rio corroboration unavailable; official bulletins were not checked."
+        )
+        return []
+
+    max_age = max(window, timedelta(hours=24))
+    reports = match_reports(posts, terms, now=query_time, max_age=max_age, limit=5)
+    if not reports:
+        return []
+
+    sources.append(
+        SourceRef(
+            name="COR.Rio",
+            access_type="WordPress REST JSON",
+            queried_at=query_time,
+            url=COR_RIO_URL,
+        )
+    )
+    limitations.append(
+        "COR.Rio bulletins are official context about operations near the queried "
+        "area; they do not confirm the specific occurrences and do not change the "
+        "assessment."
+    )
+    if window < timedelta(hours=24):
+        limitations.append(
+            "Corroboration considers COR.Rio bulletins from the last 24h, which may "
+            "be wider than the activity window."
+        )
+    return reports
+
+
 async def get_recent_activity(
     client: FogoCruzadoClient,
     *,
@@ -184,6 +250,7 @@ async def get_recent_activity(
     region: str | None = None,
     time_window: str = "1h",
     territory: IbgeLocalidadesClient | None = None,
+    corroboration: CorRioClient | None = None,
 ) -> RecentActivityResult:
     """Fetch, filter, normalize, and assess recent Fogo Cruzado activity."""
     query_time = datetime.now(timezone.utc)
@@ -293,6 +360,21 @@ async def get_recent_activity(
             f"More than {MAX_FETCH} occurrences in the period; showing the most recent ones."
         )
 
+    is_rio = (
+        territorial_context is not None
+        and territorial_context.ibge_city_code == COR_RIO_IBGE_CODE
+    ) or slugify(_label(target.get("name")) or city) == "rio de janeiro"
+    corroborating_reports = await _corroborate(
+        corroboration,
+        is_rio=is_rio,
+        region=region,
+        occurrences=recent,
+        window=window,
+        query_time=query_time,
+        sources=sources,
+        limitations=limitations,
+    )
+
     evidence, confidence, summary = _assess(recent, query_time)
 
     newest_age = None
@@ -321,6 +403,7 @@ async def get_recent_activity(
         evidence_level=evidence,
         confidence_level=confidence,
         territorial_context=territorial_context,
+        corroborating_reports=corroborating_reports,
         recent_occurrences=recent,
         limitations=limitations,
         sources=sources,

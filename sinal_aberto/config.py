@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 DEFAULT_BASE_URL = "https://api-service.fogocruzado.org.br/api/v2"
 DEFAULT_IBGE_BASE_URL = "https://servicodados.ibge.gov.br/api/v1/localidades"
+DEFAULT_COR_RIO_BASE_URL = "https://cor.rio"
 
 # Specific names are safe to read from os.environ because they belong to this app.
 _EMAIL_ENV_NAMES = (
@@ -36,11 +37,14 @@ class Settings(BaseModel):
     fogocruzado_password: str
     fogocruzado_base_url: str = DEFAULT_BASE_URL
     ibge_base_url: str = DEFAULT_IBGE_BASE_URL
+    cor_rio_base_url: str = DEFAULT_COR_RIO_BASE_URL
     http_timeout: float = 20.0
     occurrences_cache_ttl: float = 60.0
     catalog_cache_ttl: float = 300.0
     # IBGE municipal metadata is effectively static for this workflow; cache it for one day.
     ibge_cache_ttl: float = 86_400.0
+    # COR.Rio is a live feed; keep a short cache to absorb bursts.
+    cor_rio_cache_ttl: float = 120.0
     host: str = "127.0.0.1"
     port: int = 8000
 
@@ -81,12 +85,18 @@ def get_settings() -> Settings:
         or file_values.get("IBGE_API_BASE_URL")
         or DEFAULT_IBGE_BASE_URL
     )
+    cor_rio_base_url = (
+        os.getenv("COR_RIO_BASE_URL")
+        or file_values.get("COR_RIO_BASE_URL")
+        or DEFAULT_COR_RIO_BASE_URL
+    )
 
     return Settings(
         fogocruzado_email=email,
         fogocruzado_password=password,
         fogocruzado_base_url=base_url,
         ibge_base_url=ibge_base_url,
+        cor_rio_base_url=cor_rio_base_url,
         host=os.getenv("SINAL_ABERTO_HOST", "127.0.0.1"),
         port=int(os.getenv("SINAL_ABERTO_PORT", "8000")),
     )

@@ -10,12 +10,13 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from ..adapters.cor_rio import CorRioClient
 from ..adapters.fogocruzado import FogoCruzadoClient
 from ..adapters.ibge import IbgeLocalidadesClient
 from ..models import DataSourcesResult, DataSourceStatus
 
 # Static catalog for auxiliary sources that were validated but are not integrated yet.
-# IBGE Localidades is no longer here because it was promoted to integrated Tier 1.
+# IBGE Localidades (Tier 1) and COR.Rio (Tier 3) are no longer here: both promoted.
 _SECONDARY: tuple[dict, ...] = (
     {
         "name": "IBGE Malhas",
@@ -78,29 +79,20 @@ _SECONDARY: tuple[dict, ...] = (
             "Validated; not used in responses yet.",
         ],
     },
-    {
-        "name": "COR.Rio",
-        "role": "official context with low evidentiary weight",
-        "access_type": "WordPress REST / RSS",
-        "coverage": "Rio de Janeiro city",
-        "known_limitations": [
-            "Requires browser-like headers; the WAF returns 403 without them.",
-            "Validated; not used in responses yet.",
-        ],
-    },
 )
 
 
 async def list_data_sources(
     client: FogoCruzadoClient,
     territory: IbgeLocalidadesClient | None = None,
+    corroboration: CorRioClient | None = None,
 ) -> DataSourcesResult:
     """Probe integrated sources and return the full source catalog."""
     query_time = datetime.now(timezone.utc)
     limitations = [
-        "Integrated into responses: Fogo Cruzado (occurrences) and IBGE "
-        "Localidades (territorial normalization). Other sources are validated "
-        "but not queried in real time yet."
+        "Integrated into responses: Fogo Cruzado (occurrences), IBGE Localidades "
+        "(territorial normalization), and COR.Rio (official corroboration, Rio "
+        "only). Other sources are validated but not queried in real time yet."
     ]
 
     try:
@@ -150,6 +142,32 @@ async def list_data_sources(
             known_limitations=[
                 "Descriptive enrichment: resolves IBGE code/state/macro-region, "
                 "without changing evidence or confidence.",
+            ],
+        )
+    )
+
+    cor_rio_status = "integrated"
+    if corroboration is not None:
+        try:
+            await corroboration.probe()
+            cor_rio_status = "operational"
+        except Exception:  # noqa: BLE001 - any probe failure becomes unavailable status
+            cor_rio_status = "unavailable"
+            limitations.append(
+                "COR.Rio did not respond to the health probe at query time."
+            )
+    sources.append(
+        DataSourceStatus(
+            name="COR.Rio",
+            role="official textual corroboration (Tier 3)",
+            access_type="WordPress REST JSON",
+            status=cor_rio_status,
+            coverage="Rio de Janeiro city",
+            last_query_time=query_time,
+            known_limitations=[
+                "Requires browser-like headers; the WAF returns 403 without them.",
+                "Text corroboration only; adds context, not evidence or confidence "
+                "(Phase A: descriptive).",
             ],
         )
     )

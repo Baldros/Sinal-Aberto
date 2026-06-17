@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from fastmcp import FastMCP
 
+from .adapters.cor_rio import CorRioClient
 from .adapters.fogocruzado import FogoCruzadoClient
 from .adapters.ibge import IbgeLocalidadesClient
 from .config import get_settings
@@ -48,6 +49,7 @@ mcp = FastMCP(
 
 _client: FogoCruzadoClient | None = None
 _ibge_client: IbgeLocalidadesClient | None = None
+_cor_rio_client: CorRioClient | None = None
 
 
 def _get_client() -> FogoCruzadoClient:
@@ -76,6 +78,19 @@ def _get_ibge_client() -> IbgeLocalidadesClient:
             catalog_ttl=settings.ibge_cache_ttl,
         )
     return _ibge_client
+
+
+def _get_cor_rio_client() -> CorRioClient:
+    """Create the COR.Rio client lazily and share its short cache across calls."""
+    global _cor_rio_client
+    if _cor_rio_client is None:
+        settings = get_settings()
+        _cor_rio_client = CorRioClient(
+            base_url=settings.cor_rio_base_url,
+            timeout=settings.http_timeout,
+            cache_ttl=settings.cor_rio_cache_ttl,
+        )
+    return _cor_rio_client
 
 
 @mcp.tool(annotations={"readOnlyHint": True, "openWorldHint": True})
@@ -111,6 +126,7 @@ async def get_recent_activity(
         region=region,
         time_window=time_window,
         territory=_get_ibge_client(),
+        corroboration=_get_cor_rio_client(),
     )
 
 
@@ -147,7 +163,11 @@ async def list_data_sources() -> DataSourcesResult:
     validated but not yet integrated, matching the current system state. The
     'status' field of each entry tells the difference.
     """
-    return await _list_data_sources(_get_client(), territory=_get_ibge_client())
+    return await _list_data_sources(
+        _get_client(),
+        territory=_get_ibge_client(),
+        corroboration=_get_cor_rio_client(),
+    )
 
 
 def main() -> None:

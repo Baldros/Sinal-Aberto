@@ -173,6 +173,29 @@ class LocationResolution(BaseModel):
     )
 
 
+class CorroboratingReport(BaseModel):
+    """An official COR.Rio security/operations bulletin near the queried area.
+
+    Independent context from a public source (Rio de Janeiro city only), filtered
+    to police/security topics. It indicates that official activity was reported
+    nearby in the same window; it does NOT confirm a specific occurrence. Phase A:
+    descriptive only, does not change evidence or confidence.
+    """
+
+    title: str = Field(description="Bulletin headline, plain text.")
+    area: str | None = Field(
+        default=None, description="Location term the bulletin matched, when known."
+    )
+    summary: str | None = Field(
+        default=None, description="Short plain-text excerpt; never the full article."
+    )
+    published_at: datetime | None = Field(
+        default=None, description="UTC publication time, when known."
+    )
+    source: str = Field(default="COR.Rio", description='Always "COR.Rio".')
+    url: str | None = Field(default=None, description="Link to the official bulletin.")
+
+
 class RecentActivityResult(BaseModel):
     """Result returned by `get_recent_activity`."""
 
@@ -215,6 +238,16 @@ class RecentActivityResult(BaseModel):
     territorial_context: TerritorialContext | None = Field(
         default=None,
         description="Official IBGE normalization of the queried city; null if unavailable.",
+    )
+    corroborating_reports: list[CorroboratingReport] = Field(
+        default_factory=list,
+        description=(
+            "Official COR.Rio security/operations bulletins that mention the same "
+            "area within the window (Rio de Janeiro city only). Context that official "
+            "activity was reported nearby—NOT confirmation of a specific occurrence. "
+            "Present it as context; it does not change evidence or confidence. Empty "
+            "for other cities or when nothing relevant matches."
+        ),
     )
     recent_occurrences: list[RecentOccurrence] = Field(
         default_factory=list,
