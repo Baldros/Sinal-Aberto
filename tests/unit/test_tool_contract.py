@@ -6,7 +6,12 @@ relies on, so an accidental edit that strips guidance or an enum fails loudly.
 
 from fastmcp import Client
 
-from sinal_aberto.models import DataSourceStatus, RecentActivityResult, TerritorialContext
+from sinal_aberto.models import (
+    DataSourceStatus,
+    LocationResolution,
+    RecentActivityResult,
+    TerritorialContext,
+)
 from sinal_aberto.server import mcp
 
 
@@ -20,7 +25,7 @@ async def _tools():
 
 async def test_tools_are_marked_read_only_and_open_world() -> None:
     tools = await _tools()
-    for name in ("get_recent_activity", "list_data_sources"):
+    for name in ("get_recent_activity", "list_data_sources", "resolve_location"):
         ann = tools[name].annotations
         assert ann is not None and ann.readOnlyHint is True
         assert ann.openWorldHint is True
@@ -71,3 +76,19 @@ def test_source_status_enum_is_published() -> None:
         "integrated",
         "validated, not integrated",
     }
+
+
+def test_resolution_status_enum_is_published() -> None:
+    schema = LocationResolution.model_json_schema()
+    assert set(schema["properties"]["status"]["enum"]) == {
+        "resolved",
+        "ambiguous",
+        "approximate",
+        "not_found",
+    }
+
+
+async def test_resolve_location_description_guides_the_agent() -> None:
+    desc = (await _tools())["resolve_location"].description.lower()
+    assert "ambiguous" in desc
+    assert "hardcoded code" in desc or "never a hardcoded" in desc

@@ -3,7 +3,12 @@
 from typing import Any
 
 from sinal_aberto.models import TerritorialContext
-from sinal_aberto.tools.territory import resolve_territory, slugify
+from sinal_aberto.tools.territory import (
+    find_candidates,
+    municipality_summary,
+    resolve_territory,
+    slugify,
+)
 
 
 def _muni(
@@ -103,3 +108,42 @@ def test_resolve_approximate_by_substring() -> None:
 def test_resolve_without_match_returns_none() -> None:
     assert resolve_territory(CATALOG, "Atlantis") is None
     assert resolve_territory(CATALOG, "") is None
+
+
+# -- find_candidates (shared primitive) --------------------------------
+
+
+def test_find_candidates_exact_returns_all_with_tier() -> None:
+    matches, tier = find_candidates(CATALOG, "Bom Jesus")
+    assert tier == "exact"
+    assert {m["id"] for m in matches} == {3550308, 4302808}
+
+
+def test_find_candidates_narrows_by_state() -> None:
+    matches, tier = find_candidates(CATALOG, "Bom Jesus", uf="RS")
+    assert tier == "exact"
+    assert [m["id"] for m in matches] == [4302808]
+
+
+def test_find_candidates_substring_tier() -> None:
+    matches, tier = find_candidates(CATALOG, "Amarante")
+    assert tier == "approximate"
+    assert [m["id"] for m in matches] == [2412405]
+
+
+def test_find_candidates_none_tier() -> None:
+    assert find_candidates(CATALOG, "Atlantis") == ([], "none")
+    assert find_candidates(CATALOG, "") == ([], "none")
+
+
+# -- municipality_summary ----------------------------------------------
+
+
+def test_municipality_summary_extracts_official_fields() -> None:
+    summary = municipality_summary(CATALOG[0])  # Rio de Janeiro
+    assert summary == {
+        "ibge_city_code": 3304557,
+        "name": "Rio de Janeiro",
+        "uf": "RJ",
+        "macro_region": "Sudeste",
+    }
