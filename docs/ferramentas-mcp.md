@@ -31,6 +31,14 @@ The initial contract should expose **6 public tools**:
 5. `explain_assessment`
 6. `list_data_sources`
 
+> Implementation status (2026-06-17): `get_recent_activity` and `list_data_sources`
+> are implemented, plus `resolve_location` (a disambiguation helper not in the
+> original list). `get_active_clusters`, `estimate_activity_probability`,
+> `estimate_public_impact`, and `explain_assessment` remain proposed; the
+> probability/impact tools belong to Phase B. `get_recent_activity` already returns
+> the territorial context, recent-intensity operation profile, ISP historical
+> baseline, and COR.Rio corroboration described across the other documents.
+
 ## 1. `get_recent_activity`
 
 Queries recent signs of armed or police activity in a city, neighborhood, or

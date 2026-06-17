@@ -299,6 +299,10 @@ violence intensity, normalized and ranked across RJ municipalities:
   cluster layer needs SQL). ISP/RJ first; SINESP national later.
 - Under-reporting near communities is a first-class limitation in the response.
 
+Status: implemented. 2a (Fogo Cruzado recent intensity) and 2b (ISP offline
+baseline) are live; the prepared file ships at `sinal_aberto/data/isp_baseline.json`,
+rebuilt by `python -m sinal_aberto.ingest.build_isp_baseline`.
+
 ### Tier 3 - COR.Rio Corroboration
 
 Goal: weak official-context corroboration.
@@ -310,6 +314,10 @@ Implementation:
 - Match city/region terms conservatively.
 - Add `corroborating_reports` only when relevance is clear.
 - Never treat a text post as decisive evidence of an occurrence.
+
+Status: implemented (Phase A). Anti-bias safeguards: a geographic gate (Rio city
+only), a security-topic relevance filter (traffic/public-works bulletins are
+rejected), and honest framing in the response (context, not confirmation).
 
 ### Tier 4 - GPS SPPO Experimental Signal
 
@@ -323,6 +331,8 @@ Implementation:
 - Use only aggregate anomalies, not raw vehicle positions.
 - Keep this behind an experimental flag until quality is proven.
 
+Status: not started (optional/experimental).
+
 ## Safety Rules
 
 - Exact coordinates stay internal unless explicitly safe and necessary.
@@ -331,3 +341,33 @@ Implementation:
 - Every auxiliary field must have source attribution.
 - Heavy downloads and parsing never run during user requests.
 - Baseline data informs context, not operational advice.
+
+## Current Status and Next Steps
+
+As of 2026-06-17, Tiers 1, 2 (a and b), and 3 are implemented, all in **Phase A**
+(descriptive enrichment: `territorial_context`, `operation_profile`,
+`historical_baseline`, and `corroborating_reports` are added to responses, but none
+of them changes `evidence_level` or `confidence_level`). A `resolve_location` tool
+was added for disambiguation, and the agent-facing contract (enums, field
+descriptions, instructions) was hardened so the calling model can act on the
+fields. 126 offline unit tests pass.
+
+### Phase B - probabilistic influence (next)
+
+Phase B is where the accumulated context starts to **refine the assessment**, not
+just describe it. Each rule must be explicit and unit-tested, like the current
+`_assess`:
+
+- COR.Rio corroboration in the same area/window raises `confidence_level` one step.
+- The ISP baseline produces its own `relative_level` axis; it must not inflate
+  `evidence_level`.
+- The recency decay and spatial concentration feed the "is it still happening"
+  estimate.
+- The intent is to introduce more explicit probability/statistics (e.g. calibrated
+  bands, priors from the chronic baseline) rather than the current heuristic bands.
+
+### Other next steps
+
+- Tier 4 (GPS SPPO) as a flagged experimental signal.
+- Cluster tools (`get_active_clusters`, `explain_assessment`).
+- Deployment as an OpenAI/Claude app/connector (stateless server, bundled data).

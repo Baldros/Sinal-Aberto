@@ -20,6 +20,58 @@ information to better understand what may be happening around them.
 - [Data sources](docs/fontes-de-dados.md): prioritized sources, access patterns, and the product role of each dataset.
 - [Fogo Cruzado API](docs/fogocruzado-api.md): official API v2 baseline, authentication, prioritized endpoints, and integration tests.
 - [MCP tools](docs/ferramentas-mcp.md): proposed public MCP tools, descriptions, inputs, outputs, and implementation priority.
+- [Secondary source validation](docs/validacao-fontes-secundarias.md): connection-tested formats, headers, and quirks of the eight auxiliary sources.
+- [Auxiliary source integration](docs/integracao-fontes-auxiliares.md): data design (three data natures), the tiered integration plan, and current status.
+
+## Implementation Status
+
+A working MCP server already exists (Python + FastMCP, Streamable HTTP). It is
+usable today and exposes three tools backed by four integrated sources, with
+source attribution, timestamps, and limitations on every response.
+
+**Tools**
+
+- `get_recent_activity(city, region, time_window)` — recent armed/police activity
+  with evidence and confidence levels, a recent-intensity operation profile
+  (massacre flag, distinct police units, spatial concentration, recency), official
+  IBGE territorial context, the ISP historical baseline, and COR.Rio corroboration.
+- `resolve_location(name, uf)` — resolve a city name to official IBGE candidates to
+  disambiguate before querying.
+- `list_data_sources()` — source catalog and live health status.
+
+**Integrated sources**
+
+- Fogo Cruzado (primary, live) — recent shootings/gunfire occurrences.
+- IBGE Localidades (live + long cache) — territorial normalization (Tier 1).
+- ISP Dados RJ (offline prepared baseline) — chronic violence intensity, RJ (Tier 2).
+- COR.Rio (live) — official security-bulletin corroboration, Rio city (Tier 3).
+
+All enrichment is currently descriptive (Phase A): it never changes the evidence or
+confidence of the live signal. The full data design and tiered plan live in
+[Auxiliary source integration](docs/integracao-fontes-auxiliares.md).
+
+**Not yet started**
+
+- Phase B: let corroboration and the historical baseline influence confidence
+  through explicit, testable probabilistic rules (more math/probability).
+- Tier 4: GPS SPPO experimental mobility signal.
+- Cluster tools, the probabilistic score, and an OpenAI/Claude app deployment.
+
+## Running Locally
+
+Put Fogo Cruzado credentials in a `.env` file at the repository root
+(`FOGOCRUZADO_EMAIL` / `FOGOCRUZADO_PASSWORD`, or generic `user` / `password`).
+
+```bash
+# Run the MCP server (Streamable HTTP)
+./.venv/Scripts/python.exe -m sinal_aberto.server
+
+# Offline unit tests (no network)
+./.venv/Scripts/python.exe -m pytest tests/unit -q
+
+# Rebuild the ISP baseline data (offline job, ~monthly)
+./.venv/Scripts/python.exe -m sinal_aberto.ingest.build_isp_baseline
+```
 
 ## Product Vision
 
@@ -261,6 +313,14 @@ Preferred starting architecture:
 - probabilistic score and initial clustering inside application code;
 - no user login in the first version, if possible.
 
+> Note: the storage approach was refined during implementation. The server is
+> currently stateless with no runtime database — live sources use in-memory caches
+> and the ISP history ships as a prepared read-only JSON artifact. Spatial
+> concentration is computed with a formula (Haversine), which removed the need for
+> a clustering database. See
+> [Auxiliary source integration](docs/integracao-fontes-auxiliares.md) for the
+> refined decision. SQLite is deferred until a feature genuinely needs SQL.
+
 PostgreSQL/PostGIS and Redis remain the natural evolution path when complex
 geospatial queries, more concurrency, broad history, a public dashboard, or
 multiple writer instances become necessary.
@@ -288,14 +348,15 @@ multiple writer instances become necessary.
 Sinal Aberto should evolve into an open MCP server so other chatbots and
 assistants can query the same urban-intelligence layer.
 
-Possible MCP tools:
+MCP tools (implemented and proposed):
 
-- `get_recent_activity(city, region, time_window)`
-- `get_active_clusters(city, time_window)`
-- `estimate_activity_probability(location, radius, time_window)`
-- `estimate_public_impact(cluster_id)`
-- `explain_assessment(cluster_id)`
-- `list_data_sources()`
+- `get_recent_activity(city, region, time_window)` — implemented.
+- `resolve_location(name, uf)` — implemented (disambiguation helper).
+- `list_data_sources()` — implemented.
+- `get_active_clusters(city, time_window)` — proposed.
+- `estimate_activity_probability(location, radius, time_window)` — proposed (Phase B).
+- `estimate_public_impact(cluster_id)` — proposed (Phase B).
+- `explain_assessment(cluster_id)` — proposed.
 
 ### Phase 4: Multiple Channels
 
@@ -305,19 +366,31 @@ Possible MCP tools:
 - Web dashboard.
 - Integrations with journalistic, civic, and academic projects.
 
-## Initial Roadmap
+## Roadmap
 
-- [ ] Request authorization to use the Fogo Cruzado API.
-- [ ] Validate limits, terms of use, caching, attribution, and public-use viability.
-- [ ] Create a minimal Python/FastMCP backend for recent-occurrence queries.
-- [ ] Define the initial SQLite schema for occurrences, clusters, and cache.
-- [ ] Map relevant API fields.
-- [ ] Define the first probabilistic-score version.
-- [ ] Implement temporal and geographic cluster grouping in application code.
-- [ ] Create explainable natural-language responses.
-- [ ] Build a prototype as a ChatGPT app/GPT.
-- [ ] Document limitations, privacy policy, and disclaimers.
-- [ ] Specify the open MCP server.
+Done:
+
+- [x] Use the Fogo Cruzado API (authenticated adapter with caching).
+- [x] Validate access patterns and the auxiliary sources (formats, headers, quirks).
+- [x] Minimal Python/FastMCP backend for recent-occurrence queries.
+- [x] Map relevant API fields into a safe, normalized response (no exact coordinates).
+- [x] Territorial normalization to official IBGE codes (Tier 1).
+- [x] Recent-intensity operation profile: spatial concentration, units, recency (Tier 2a).
+- [x] Chronic historical baseline from ISP, via an offline ingestion job (Tier 2b).
+- [x] COR.Rio official corroboration with anti-bias safeguards (Tier 3).
+- [x] Explainable responses with source, time, and limitations.
+
+Next:
+
+- [ ] Phase B: probabilistic score — let corroboration and baseline shift confidence
+      through explicit, testable rules (more math/probability).
+- [ ] Tier 4: GPS SPPO experimental mobility signal.
+- [ ] Cluster tools (`get_active_clusters`, `explain_assessment`).
+- [ ] Deploy as an OpenAI/Claude app/connector.
+- [ ] Privacy policy and disclaimers for public use.
+
+Storage note: the initial "SQLite MVP" was refined to a stateless server with a
+prepared read-only data file; SQLite is deferred until a feature needs SQL.
 
 ## Disclaimer
 
@@ -329,4 +402,8 @@ channels.
 
 ## Status
 
-Project in the initial conception and data-validation phase.
+Working MVP. A usable MCP server is implemented and tested (Python + FastMCP):
+three tools over four integrated sources (Fogo Cruzado, IBGE, ISP, COR.Rio), with
+source attribution, timestamps, and limitations on every response. All current
+enrichment is descriptive (Phase A); the probabilistic score (Phase B) and a
+public deployment are the next steps. See [Implementation Status](#implementation-status).
