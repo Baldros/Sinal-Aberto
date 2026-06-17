@@ -1,8 +1,15 @@
 # Validacao de fontes secundarias
 
 Validado em: 2026-06-12, America/Sao_Paulo.
+Revalidado em: 2026-06-17, America/Sao_Paulo, agora por testes de conexao automatizados em `tests/integration/` (um arquivo por fonte auxiliar).
 
 Escopo: fontes secundarias citadas em `docs/fontes-de-dados.md`. A API do Fogo Cruzado fica fora deste levantamento porque ja foi validada como fonte principal.
+
+## Revalidacao 2026-06-17
+
+Os testes em `tests/integration/` reexecutam esta validacao a cada rodada. Sete das oito fontes responderam como em 2026-06-12. Unica mudanca observada:
+
+- **COR.Rio passou a exigir headers de navegador.** O site agora responde `HTTP 403` a clientes sem cara de browser (esta atras de um WAF, header `server: hcdn`). Trocar apenas o `User-Agent` nao basta; e preciso enviar tambem `Accept`, `Accept-Language` e `Upgrade-Insecure-Requests`. Com esses headers, tanto o WordPress REST quanto o RSS voltam a `HTTP 200`. Detalhes em "Headers e controle de acesso".
 
 ## Resumo executivo
 
@@ -15,9 +22,34 @@ Escopo: fontes secundarias citadas em `docs/fontes-de-dados.md`. A API do Fogo C
 | DATA.RIO geosservicos | Usavel por dataset | ArcGIS REST/FeatureServer quando existir | Bairros, regioes administrativas e camadas urbanas |
 | GTFS Rio | Usavel | ZIP publico do ArcGIS/DATA.RIO | Linhas, paradas e servicos de onibus/BRT |
 | GPS SPPO | Usavel com cuidado | Endpoint publico filtrado por janela curta | Contexto operacional de mobilidade, nao sinal direto de seguranca |
-| COR.Rio / RSS oficiais | Usavel com baixo peso | WordPress REST/RSS | Contexto auxiliar e eventos oficiais |
+| COR.Rio / RSS oficiais | Usavel com baixo peso (requer headers de browser) | WordPress REST/RSS | Contexto auxiliar e eventos oficiais |
 | ISP Conecta / dashboards | Nao recomendado para ingestao direta | Usar datasets de base em vez de dashboards | Visualizacao humana, nao fonte primaria de dados |
 | `api.dados.rio` | Nao depender agora | Validar novamente antes de usar | Indisponivel no teste, retornando 503 |
+
+## Formatos de resposta e pontos de normalizacao
+
+Resumo de como cada fonte responde e do que precisa ser tratado antes de usar os dados. Serve para decidir parser, validacao e camada de ingestao, e para saber onde havera normalizacao.
+
+| Fonte | Forma de acesso | Formato do corpo | Content-Type observado | Pontos de normalizacao |
+| --- | --- | --- | --- | --- |
+| IBGE Localidades | REST | JSON (lista de objetos) | `application/json` | `id` inteiro como chave; hierarquia aninhada municipio > microrregiao > mesorregiao > UF; nao usar nome livre como chave. |
+| IBGE Malhas | REST | GeoJSON (`FeatureCollection`) | `application/vnd.geo+json` | Geometria pronta para GIS; so `GET` (HEAD responde 405); cachear por UF/qualidade. |
+| ISP Dados RJ | CKAN + download | Metadados em JSON; dados em CSV (SHP/KML em `.rar`) | CKAN `application/json`; CSV `text/csv` ou `application/octet-stream` | Confirmar encoding e separador do CSV; datas e decimais em formato BR; versionar por `resource.id`/hash. |
+| SINESP/MJSP | CKAN + download | Metadados em JSON; dados em ZIP (XLSX/CSV) + dicionarios PDF | CKAN `application/json`; download `application/zip` | Descompactar em job assincrono; ler dicionario antes de mapear colunas; `metadata_modified` em ISO 8601. |
+| DATA.RIO (ArcGIS) | ArcGIS REST | JSON ou GeoJSON (`f=json` / `f=geojson`) | `text/plain` ou `application/json` | Erro logico vem com `HTTP 200` + chave `error`: status nao basta; nomes de campos variam por layer (ler metadados antes). |
+| GTFS Rio | Item ArcGIS | Metadados em JSON; dados em ZIP (colecao de CSV GTFS) | JSON; download `application/zip` | ZIP contem varios CSV (`routes`, `stops`, `trips`, `stop_times`, `calendar`); ingerir por tabela. |
+| GPS SPPO | REST com janela | JSON (lista de objetos) | `text/html` (corpo e JSON) | Nao confiar no Content-Type para escolher parser; lat/long como string com virgula decimal; timestamps em epoch ms; exige janela curta; deduplicar por `ordem` + `datahora`. |
+| COR.Rio | WordPress REST / RSS | WP REST em JSON; feed em XML (RSS) | `application/json`; `application/rss+xml` | Exige headers de navegador (ver abaixo); tratar como contexto de baixo peso. |
+
+## Headers e controle de acesso
+
+Pontos relacionados a headers que afetam diretamente a integracao:
+
+- **COR.Rio exige cara de navegador.** Sem `User-Agent`, `Accept`, `Accept-Language` e `Upgrade-Insecure-Requests` de browser, o WAF (`server: hcdn`) responde `HTTP 403`. O cliente de ingestao precisa enviar esses headers em toda requisicao a `cor.rio`.
+- **GPS SPPO mente no Content-Type.** O header vem como `text/html`, mas o corpo e JSON. Parsear como JSON diretamente, sem ramificar pelo Content-Type.
+- **IBGE Malhas nao aceita HEAD.** Responde `405` a HEAD; usar `GET` para checagem e download.
+- **ArcGIS sinaliza erro com HTTP 200.** Tanto DATA.RIO quanto o item GTFS retornam `200` mesmo em falha logica, com o corpo `{"error": {...}}`. Validar a ausencia da chave `error`, nao apenas o status.
+- Licenca/atribuicao seguem como em 2026-06-12: registrar fonte e termos antes de redistribuir bases completas.
 
 ## ISP Dados RJ
 
@@ -216,10 +248,16 @@ Endpoints validados:
 - `https://cor.rio/wp-json/wp/v2/posts?per_page=3`
 - `https://cor.rio/feed/`
 
-Resultado validado:
+Resultado validado (2026-06-12):
 
 - WordPress REST retornou `HTTP 200`, JSON;
 - RSS retornou `HTTP 200`, XML.
+
+Revalidacao (2026-06-17):
+
+- sem headers de navegador, os dois endpoints passaram a responder `HTTP 403` (WAF, `server: hcdn`);
+- com `User-Agent`, `Accept`, `Accept-Language` e `Upgrade-Insecure-Requests` de browser, voltaram a `HTTP 200`: WP REST em JSON, RSS em XML `application/rss+xml`;
+- consequencia pratica: o cliente de ingestao do COR.Rio precisa enviar headers de browser.
 
 Limites:
 
