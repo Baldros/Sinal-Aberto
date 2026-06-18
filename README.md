@@ -1,292 +1,409 @@
 # Sinal Aberto
 
-**Sinal Aberto** é uma proposta de assistente de inteligência urbana para estimar, de forma probabilística e transparente, sinais recentes de atividade armada ou policial em uma região e seu possível impacto para a população.
+**Sinal Aberto** is a proposal for an urban-intelligence assistant that estimates,
+probabilistically and transparently, recent signs of armed or police activity in
+a region and the likely public impact.
 
-O projeto nasce com foco em cidades brasileiras com desafios graves de segurança pública, especialmente o Rio de Janeiro, e parte de uma premissa simples: o cidadão comum precisa de informação contextual, rastreável e responsável para entender melhor o que está acontecendo ao seu redor.
+The project starts with Brazilian cities that face severe public-safety
+challenges, especially Rio de Janeiro. Its core premise is simple: residents,
+workers, and people in transit need contextual, traceable, and responsible
+information to better understand what may be happening around them.
 
-> O Sinal Aberto não pretende ser um radar absoluto de operações policiais, nem uma fonte oficial de emergência. A proposta é interpretar dados públicos e sinais recentes para indicar evidências, incertezas e impacto provável em tempo quase real.
+> Sinal Aberto is not intended to be an absolute police-operation radar or an
+> official emergency source. It interprets public data and recent signals to
+> indicate evidence, uncertainty, and likely impact in near real time.
 
-## Documentos do projeto
+## Project Documents
 
-- [OpenAI Apps SDK](docs/openai-apps-sdk.md): resumo dos conceitos básicos do SDK oficial da OpenAI, links úteis e caminho sugerido para transformar o Sinal Aberto em app do ChatGPT e servidor MCP aberto.
-- [Stack técnica e hospedagem](docs/stack-e-hospedagem.md): decisão atual de começar com MVP leve em Python/FastMCP + SQLite, mantendo PostgreSQL/PostGIS e Redis como evolução.
-- [Fontes de dados](docs/fontes-de-dados.md): fontes priorizadas, forma de acesso e papel de cada base no produto.
-- [API Fogo Cruzado](docs/fogocruzado-api.md): base oficial da API v2, autenticacao, endpoints priorizados e testes de integracao.
-- [Ferramentas MCP](docs/ferramentas-mcp.md): proposta de ferramentas públicas do servidor MCP, descrições, entradas, saídas e priorização.
+- [OpenAI Apps SDK](docs/openai-apps-sdk.md): summary of the official OpenAI SDK concepts, useful links, and the path to turn Sinal Aberto into a ChatGPT app and open MCP server.
+- [Technical stack and hosting](docs/stack-e-hospedagem.md): current decision to start with a lightweight Python/FastMCP + SQLite MVP while keeping PostgreSQL/PostGIS and Redis as the evolution path.
+- [Data sources](docs/fontes-de-dados.md): prioritized sources, access patterns, and the product role of each dataset.
+- [Fogo Cruzado API](docs/fogocruzado-api.md): official API v2 baseline, authentication, prioritized endpoints, and integration tests.
+- [MCP tools](docs/ferramentas-mcp.md): proposed public MCP tools, descriptions, inputs, outputs, and implementation priority.
+- [Secondary source validation](docs/validacao-fontes-secundarias.md): connection-tested formats, headers, and quirks of the eight auxiliary sources.
+- [Auxiliary source integration](docs/integracao-fontes-auxiliares.md): data design (three data natures), the tiered integration plan, and current status.
 
-## Visão do produto
+## Implementation Status
 
-A ideia inicial é construir um app para o ChatGPT capaz de responder perguntas como:
+A working MCP server already exists (Python + FastMCP, Streamable HTTP). It is
+usable today and exposes three tools backed by four integrated sources, with
+source attribution, timestamps, and limitations on every response.
 
-- Há sinais recentes de operação policial ou atividade armada em alguma região da cidade?
-- Quais áreas têm maior evidência de atividade recente neste momento?
-- Qual é o nível provável de impacto para a população?
-- A informação vem de qual fonte, com qual horário de atualização e com qual nível de confiança?
-- O evento parece isolado ou faz parte de um cluster de ocorrências próximas no tempo e no espaço?
+**Tools**
 
-A longo prazo, o Sinal Aberto pode evoluir para uma camada aberta de utilidade pública, disponível não apenas no ChatGPT, mas também em outros chatbots, aplicativos cívicos, painéis públicos e integrações via MCP.
+- `get_recent_activity(city, region, time_window)` — recent armed/police activity
+  with evidence and confidence levels, a recent-intensity operation profile
+  (massacre flag, distinct police units, spatial concentration, recency), official
+  IBGE territorial context, the ISP historical baseline, and COR.Rio corroboration.
+- `resolve_location(name, uf)` — resolve a city name to official IBGE candidates to
+  disambiguate before querying.
+- `list_data_sources()` — source catalog and live health status.
 
-## Tese central
+**Integrated sources**
 
-O problema não deve ser tratado de forma determinística.
+- Fogo Cruzado (primary, live) — recent shootings/gunfire occurrences.
+- IBGE Localidades (live + long cache) — territorial normalization (Tier 1).
+- ISP Dados RJ (offline prepared baseline) — chronic violence intensity, RJ (Tier 2).
+- COR.Rio (live) — official security-bulletin corroboration, Rio city (Tier 3).
 
-Em vez de afirmar que existe ou não existe uma operação em andamento, o Sinal Aberto deve estimar:
+All enrichment is currently descriptive (Phase A): it never changes the evidence or
+confidence of the live signal. The full data design and tiered plan live in
+[Auxiliary source integration](docs/integracao-fontes-auxiliares.md).
 
-1. **Probabilidade de atividade atual**  
-   Estimativa de que há atividade armada ou policial recente ainda relevante em determinada região.
+**Not yet started**
 
-2. **Impacto provável para a população**  
-   Estimativa do efeito prático do evento para moradores, trabalhadores e pessoas em deslocamento.
+- Phase B: let corroboration and the historical baseline influence confidence
+  through explicit, testable probabilistic rules (more math/probability).
+- Tier 4: GPS SPPO experimental mobility signal.
+- Cluster tools, the probabilistic score, and an OpenAI/Claude app deployment.
 
-3. **Nível de confiança**  
-   Grau de robustez da resposta, considerando fonte, recência, consistência dos sinais e histórico local.
+## Running Locally
 
-4. **Explicabilidade**  
-   A resposta deve mostrar quais sinais levaram à classificação: recência, concentração de ocorrências, vítimas, presença policial, interrupções de transporte, histórico da região etc.
+Put Fogo Cruzado credentials in a `.env` file at the repository root
+(`FOGOCRUZADO_EMAIL` / `FOGOCRUZADO_PASSWORD`, or generic `user` / `password`).
 
-## Exemplo de resposta desejada
+```bash
+# Run the MCP server (Streamable HTTP)
+./.venv/Scripts/python.exe -m sinal_aberto.server
 
-> Há alta evidência de atividade armada/policial recente na região do Complexo do Alemão. Foram identificados registros próximos nos últimos 45 minutos, incluindo indicação de ação policial e presença de agentes. O impacto estimado é alto, principalmente pela concentração temporal dos registros e pelo histórico da região.  
->  
-> Confiança: moderada.  
-> Limitação: os dados indicam ocorrências recentes, mas não confirmam oficialmente que a operação segue em andamento.
+# Offline unit tests (no network)
+./.venv/Scripts/python.exe -m pytest tests/unit -q
 
-## Métricas propostas
-
-### 1. Probabilidade de atividade atual
-
-Uma métrica para estimar se um evento recente ainda pode estar ativo ou relevante.
-
-Sinais possíveis:
-
-- Minutos desde a última ocorrência.
-- Número de ocorrências próximas nas últimas horas.
-- Ocorrência marcada como ação policial ou operação policial.
-- Presença de agentes.
-- Unidade policial identificada.
-- Cluster geográfico e temporal.
-- Histórico da área para ocorrências semelhantes.
-- Probabilidade histórica de continuidade após o primeiro registro.
-
-Exemplo conceitual:
-
-```text
-score_atividade =
-  recencia
-+ cluster_recente
-+ indicador_operacao_policial
-+ presenca_agentes
-+ historico_local
-+ fontes_complementares
+# Rebuild the ISP baseline data (offline job, ~monthly)
+./.venv/Scripts/python.exe -m sinal_aberto.ingest.build_isp_baseline
 ```
 
-A saída não precisa ser exibida como percentual exato. Pode ser apresentada em faixas:
+## Product Vision
 
-- Baixa evidência.
-- Evidência moderada.
-- Alta evidência.
-- Evidência muito alta.
+The initial idea is to build a ChatGPT app able to answer questions such as:
 
-### 2. Impacto provável
+- Are there recent signs of a police operation or armed activity in a city area?
+- Which areas have the strongest evidence of recent activity right now?
+- What is the likely public-impact level?
+- Which source produced the information, when was it updated, and with what confidence level?
+- Does the event look isolated or part of a cluster of nearby occurrences in time and space?
 
-Uma métrica separada para estimar a gravidade ou intensidade do impacto público.
+Longer term, Sinal Aberto can evolve into an open public-utility layer available
+not only in ChatGPT, but also in other chatbots, civic apps, public dashboards,
+and MCP integrations.
 
-Sinais possíveis:
+## Core Thesis
 
-- Vítimas feridas.
-- Mortes.
-- Múltiplas ocorrências próximas.
-- Duração estimada do cluster.
-- Dispersão geográfica.
-- Interrupção de transporte.
-- Horário de alta circulação.
-- Histórico local de letalidade ou recorrência.
-- Presença de operação policial.
+The problem should not be treated deterministically.
 
-Faixas possíveis:
+Instead of claiming that an operation is or is not ongoing, Sinal Aberto should
+estimate:
 
-- Baixo impacto reportado.
-- Médio impacto reportado.
-- Alto impacto reportado.
-- Crítico.
+1. **Current activity probability**
+   The likelihood that recent armed or police activity is still relevant in a
+   region.
 
-## Unidade de análise: clusters
+2. **Likely public impact**
+   The practical effect for residents, workers, and people in transit.
 
-O Sinal Aberto deve evitar analisar ocorrências isoladas de forma excessivamente literal.
+3. **Confidence level**
+   The robustness of the answer, based on source quality, recency, consistency
+   of signals, and local history.
 
-A unidade principal deve ser o **cluster ativo**, ou seja, um conjunto de ocorrências relacionadas por:
+4. **Explainability**
+   The answer should show which signals led to the classification: recency,
+   concentration of records, victims, police presence, transport disruption,
+   local history, and related factors.
 
-- proximidade geográfica;
-- janela temporal;
-- bairro, comunidade ou localidade;
-- tipo de evento;
-- presença policial;
-- sinais de continuidade.
+## Example Response
 
-Isso permite respostas mais úteis e menos frágeis do que simplesmente listar eventos individuais.
+> There is high evidence of recent armed or police activity in the Complexo do
+> Alemao area. Nearby records were identified in the last 45 minutes, including
+> indications of police action and agent presence. Estimated impact is high,
+> mainly because of the temporal concentration of records and the area's history.
+>
+> Confidence: moderate.
+> Limitation: the data indicates recent occurrences, but does not officially
+> confirm that an operation is still ongoing.
 
-## Fontes de dados consideradas
+## Proposed Metrics
 
-### Fonte principal
+### 1. Current Activity Probability
+
+A metric for estimating whether a recent event may still be active or relevant.
+
+Possible signals:
+
+- Minutes since the latest occurrence.
+- Number of nearby occurrences in the last hours.
+- Occurrence marked as police action or police operation.
+- Agent presence.
+- Identified police unit.
+- Geographic and temporal cluster.
+- Area history for similar occurrences.
+- Historical probability of continuity after the first record.
+
+Conceptual example:
+
+```text
+activity_score =
+  recency
++ recent_cluster
++ police_operation_indicator
++ agent_presence
++ local_history
++ complementary_sources
+```
+
+The output does not need to be displayed as an exact percentage. It can be
+presented in bands:
+
+- Low evidence.
+- Moderate evidence.
+- High evidence.
+- Very high evidence.
+
+### 2. Likely Impact
+
+A separate metric for estimating the severity or intensity of public impact.
+
+Possible signals:
+
+- Injured victims.
+- Deaths.
+- Multiple nearby occurrences.
+- Estimated cluster duration.
+- Geographic spread.
+- Transport interruption.
+- High-circulation time of day.
+- Local history of lethality or recurrence.
+- Police-operation presence.
+
+Possible bands:
+
+- Low reported impact.
+- Medium reported impact.
+- High reported impact.
+- Critical.
+
+## Analysis Unit: Clusters
+
+Sinal Aberto should avoid interpreting isolated occurrences too literally.
+
+The main analysis unit should be the **active cluster**, meaning a group of
+occurrences related by:
+
+- geographic proximity;
+- time window;
+- neighborhood, community, or locality;
+- event type;
+- police presence;
+- signs of continuity.
+
+This allows more useful and less fragile answers than simply listing individual
+events.
+
+## Considered Data Sources
+
+### Primary Source
 
 #### Fogo Cruzado
 
-- Site da API: https://api.fogocruzado.org.br/
-- Documentação: https://api.fogocruzado.org.br/docs
+- API site: https://api.fogocruzado.org.br/
+- Documentation: https://api.fogocruzado.org.br/docs
 
-O Fogo Cruzado é a fonte mais alinhada com a proposta inicial do Sinal Aberto. A API fornece dados atualizados sobre tiroteios e disparos de arma de fogo, incluindo regiões metropolitanas como Rio de Janeiro, Recife, Bahia e Pará. A documentação informa que a API possui metadados de última atualização e que as datas seguem o fuso de Brasília.
+Fogo Cruzado is the source most aligned with the initial Sinal Aberto proposal.
+The API provides updated data on shootings and gunfire, including metropolitan
+regions such as Rio de Janeiro, Recife, Bahia, and Para. The documentation says
+the API includes last-update metadata and uses Brasilia time.
 
-Pontos relevantes:
+Relevant points:
 
-- Base voltada a violência armada.
-- Ocorrências georreferenciadas.
-- Potencial de consulta em tempo quase real.
-- Dados sobre tiroteios, disparos, presença de agentes, ação/operação policial, vítimas e outros indicadores.
-- Requer autorização prévia para uso da API.
+- Armed-violence-focused dataset.
+- Georeferenced occurrences.
+- Near-real-time query potential.
+- Data on shootings, gunfire, agent presence, police action/operation, victims,
+  and other indicators.
+- Requires prior authorization for API use.
 
-### Fontes complementares
+### Complementary Sources
 
-#### ISP Dados - Instituto de Segurança Pública do Rio de Janeiro
+#### ISP Dados - Rio de Janeiro Public Security Institute
 
 - Portal: https://www.ispdados.rj.gov.br/
 
-Fonte oficial para bases de registros criminais e atividade policial do estado do Rio de Janeiro. Útil para histórico, contexto, validação estatística e construção de priors territoriais.
+Official source for criminal-record and police-activity datasets in Rio de
+Janeiro state. Useful for history, context, statistical validation, and
+territorial priors.
 
-#### ISP Visualização / ISP Conecta
+#### ISP Visualizacao / ISP Conecta
 
-- Visualização de dados: https://www.ispvisualizacao.rj.gov.br/
+- Data visualization: https://www.ispvisualizacao.rj.gov.br/
 - ISP Conecta: https://ispconecta.rj.gov.br/
 
-Pode ser usado para painéis, contexto territorial e análise pública de indicadores de segurança.
+Useful for dashboards, territorial context, and public analysis of safety
+indicators.
 
-#### SINESP / Ministério da Justiça e Segurança Pública
+#### SINESP / Ministry of Justice and Public Security
 
-- Portal de dados: https://dados.mj.gov.br/dataset/sistema-nacional-de-estatisticas-de-seguranca-publica
+- Data portal: https://dados.mj.gov.br/dataset/sistema-nacional-de-estatisticas-de-seguranca-publica
 
-Fonte nacional de indicadores de segurança pública. Útil para análise agregada, comparação territorial e contexto histórico, mas não deve ser tratada como fonte principal de tempo real.
+National source for public-safety indicators. Useful for aggregate analysis,
+territorial comparison, and historical context, but not as a primary real-time
+source.
 
 #### DATA.RIO
 
 - Portal: https://www.data.rio/
 
-Fonte relevante para camadas urbanas, bases geográficas, bairros, limites territoriais, equipamentos públicos e enriquecimento geoespacial da aplicação.
+Relevant source for urban layers, geographic datasets, neighborhoods,
+territorial boundaries, public facilities, and geospatial enrichment.
 
-#### Outras fontes potenciais
+#### Other Potential Sources
 
-- Dados de transporte público e trânsito.
-- Comunicados oficiais de órgãos públicos.
-- Fontes jornalísticas verificadas.
-- Bases municipais de ocorrências, serviços e infraestrutura urbana.
-- Relatos públicos, quando houver metodologia robusta de verificação e controle de boatos.
+- Public-transport and traffic data.
+- Official communications from public agencies.
+- Verified journalism sources.
+- Municipal occurrence, service, and urban-infrastructure datasets.
+- Public reports, only with robust verification and rumor-control methodology.
 
-## Princípios de produto
+## Product Principles
 
-1. **Probabilístico, não determinístico**  
-   O sistema estima evidências e probabilidades, sem prometer confirmação absoluta.
+1. **Probabilistic, not deterministic**
+   The system estimates evidence and probability without promising absolute
+   confirmation.
 
-2. **Explicável**  
-   Toda resposta deve informar os principais fatores que levaram à classificação.
+2. **Explainable**
+   Every answer should state the main factors behind the classification.
 
-3. **Rastreável**  
-   Toda afirmação deve indicar fonte, horário de consulta e, quando possível, horário de última atualização dos dados.
+3. **Traceable**
+   Every claim should indicate source, query time, and, when possible, data
+   last-update time.
 
-4. **Conservador por padrão**  
-   Na dúvida, o sistema deve reduzir a confiança da resposta em vez de exagerar a certeza.
+4. **Conservative by default**
+   When uncertain, the system should reduce confidence instead of overstating
+   certainty.
 
-5. **Útil para o cidadão comum**  
-   A linguagem deve ser clara, direta e orientada a contexto, não a jargão técnico.
+5. **Useful for ordinary residents**
+   Language should be clear, direct, and contextual rather than technical jargon.
 
-6. **Responsável e não operacional**  
-   O projeto não deve ajudar usuários a burlar operações, localizar agentes com precisão sensível ou tomar decisões táticas perigosas.
+6. **Responsible and non-operational**
+   The project must not help users evade operations, precisely locate agents, or
+   make dangerous tactical decisions.
 
-7. **Privacidade por padrão**  
-   O sistema deve evitar armazenar localização precisa do usuário sem necessidade clara.
+7. **Privacy by default**
+   The system should avoid storing precise user location unless clearly needed.
 
-## Limitações assumidas
+## Assumed Limitations
 
-- Não há garantia de cobertura completa de todas as operações policiais.
-- Ocorrências podem entrar na base com atraso.
-- Uma ocorrência recente não prova que o evento continua ativo.
-- Dados colaborativos podem exigir validação, correção ou atualização posterior.
-- Fontes oficiais podem ter defasagem temporal.
-- A classificação de impacto é uma estimativa, não uma confirmação oficial.
+- There is no guarantee of complete coverage of all police operations.
+- Occurrences may enter the source with delay.
+- A recent occurrence does not prove that an event is still active.
+- Collaborative data may require later validation, correction, or updates.
+- Official sources can have timing lag.
+- Impact classification is an estimate, not an official confirmation.
 
-## Arquitetura pretendida
+## Target Architecture
 
-### Decisão de MVP
+### MVP Decision
 
-O MVP inicial deve privilegiar **segurança, leveza e baixo custo operacional**.
+The initial MVP should prioritize **safety, lightness, and low operating cost**.
 
-Para começar, a arquitetura preferida é:
+Preferred starting architecture:
 
-- servidor MCP em Python com FastMCP;
-- persistência local simples com SQLite;
-- cache curto em memória ou tabela SQLite;
-- consultas à API do Fogo Cruzado por adaptador isolado;
-- score probabilístico e clusterização inicial no código da aplicação;
-- sem login de usuário na primeira versão, se possível.
+- MCP server in Python with FastMCP;
+- simple local persistence with SQLite;
+- short cache in memory or SQLite table;
+- Fogo Cruzado API calls behind an isolated adapter;
+- probabilistic score and initial clustering inside application code;
+- no user login in the first version, if possible.
 
-PostgreSQL/PostGIS e Redis continuam sendo a rota natural de evolução quando houver necessidade real de consultas geoespaciais complexas, maior concorrência, histórico amplo, dashboard público ou múltiplas instâncias escrevendo no mesmo banco.
+> Note: the storage approach was refined during implementation. The server is
+> currently stateless with no runtime database — live sources use in-memory caches
+> and the ISP history ships as a prepared read-only JSON artifact. Spatial
+> concentration is computed with a formula (Haversine), which removed the need for
+> a clustering database. See
+> [Auxiliary source integration](docs/integracao-fontes-auxiliares.md) for the
+> refined decision. SQLite is deferred until a feature genuinely needs SQL.
 
-### Fase 1: app para ChatGPT
+PostgreSQL/PostGIS and Redis remain the natural evolution path when complex
+geospatial queries, more concurrency, broad history, a public dashboard, or
+multiple writer instances become necessary.
 
-- GPT customizado ou app no ChatGPT.
-- Integração com backend próprio.
-- Consulta a fontes externas via API.
-- Respostas em linguagem natural com fonte, horário, confiança e explicação.
+### Phase 1: ChatGPT App
 
-### Fase 2: backend de dados
+- Custom GPT or ChatGPT app.
+- Integration with a dedicated backend.
+- External-source queries through APIs.
+- Natural-language responses with source, time, confidence, and explanation.
 
-- Proxy para a API do Fogo Cruzado e fontes complementares.
-- Cache leve e controle de atualização.
-- Banco SQLite no MVP, com caminho de migração para PostgreSQL/PostGIS.
-- Normalização geográfica.
-- Detecção de clusters inicialmente no código da aplicação.
-- Cálculo de probabilidade de atividade atual.
-- Cálculo de impacto provável.
-- Logs mínimos e política de privacidade.
+### Phase 2: Data Backend
 
-### Fase 3: MCP aberto
+- Proxy for Fogo Cruzado and complementary sources.
+- Lightweight cache and update control.
+- SQLite in the MVP, with a migration path to PostgreSQL/PostGIS.
+- Geographic normalization.
+- Initial cluster detection in application code.
+- Current-activity probability calculation.
+- Likely-impact calculation.
+- Minimal logs and privacy policy.
 
-O Sinal Aberto deve evoluir para um servidor MCP aberto, permitindo que outros chatbots e assistentes consultem a mesma camada de inteligência urbana.
+### Phase 3: Open MCP
 
-Possíveis ferramentas MCP:
+Sinal Aberto should evolve into an open MCP server so other chatbots and
+assistants can query the same urban-intelligence layer.
 
-- `get_recent_activity(city, region, time_window)`
-- `get_active_clusters(city, time_window)`
-- `estimate_activity_probability(location, radius, time_window)`
-- `estimate_public_impact(cluster_id)`
-- `explain_assessment(cluster_id)`
-- `list_data_sources()`
+MCP tools (implemented and proposed):
 
-### Fase 4: expansão para múltiplos canais
+- `get_recent_activity(city, region, time_window)` — implemented.
+- `resolve_location(name, uf)` — implemented (disambiguation helper).
+- `list_data_sources()` — implemented.
+- `get_active_clusters(city, time_window)` — proposed.
+- `estimate_activity_probability(location, radius, time_window)` — proposed (Phase B).
+- `estimate_public_impact(cluster_id)` — proposed (Phase B).
+- `explain_assessment(cluster_id)` — proposed.
+
+### Phase 4: Multiple Channels
 
 - ChatGPT.
-- Outros chatbots compatíveis com MCP.
-- API pública.
-- Dashboard web.
-- Integrações com projetos jornalísticos, cívicos e acadêmicos.
+- Other MCP-compatible chatbots.
+- Public API.
+- Web dashboard.
+- Integrations with journalistic, civic, and academic projects.
 
-## Roadmap inicial
+## Roadmap
 
-- [ ] Solicitar autorização de uso da API do Fogo Cruzado.
-- [ ] Validar limites, termos de uso, cache, atribuição e possibilidade de uso público.
-- [ ] Criar backend mínimo em Python/FastMCP para consulta de ocorrências recentes.
-- [ ] Definir schema SQLite inicial para ocorrências, clusters e cache.
-- [ ] Mapear campos relevantes da API.
-- [ ] Definir primeira versão do score probabilístico.
-- [ ] Implementar agrupamento por clusters temporais e geográficos no código da aplicação.
-- [ ] Criar respostas explicáveis em linguagem natural.
-- [ ] Construir protótipo como app/GPT do ChatGPT.
-- [ ] Documentar limitações, política de privacidade e disclaimers.
-- [ ] Especificar servidor MCP aberto.
+Done:
+
+- [x] Use the Fogo Cruzado API (authenticated adapter with caching).
+- [x] Validate access patterns and the auxiliary sources (formats, headers, quirks).
+- [x] Minimal Python/FastMCP backend for recent-occurrence queries.
+- [x] Map relevant API fields into a safe, normalized response (no exact coordinates).
+- [x] Territorial normalization to official IBGE codes (Tier 1).
+- [x] Recent-intensity operation profile: spatial concentration, units, recency (Tier 2a).
+- [x] Chronic historical baseline from ISP, via an offline ingestion job (Tier 2b).
+- [x] COR.Rio official corroboration with anti-bias safeguards (Tier 3).
+- [x] Explainable responses with source, time, and limitations.
+
+Next:
+
+- [ ] Phase B: probabilistic score — let corroboration and baseline shift confidence
+      through explicit, testable rules (more math/probability).
+- [ ] Tier 4: GPS SPPO experimental mobility signal.
+- [ ] Cluster tools (`get_active_clusters`, `explain_assessment`).
+- [ ] Deploy as an OpenAI/Claude app/connector.
+- [ ] Privacy policy and disclaimers for public use.
+
+Storage note: the initial "SQLite MVP" was refined to a stateless server with a
+prepared read-only data file; SQLite is deferred until a feature needs SQL.
 
 ## Disclaimer
 
-O Sinal Aberto é uma proposta de ferramenta de informação pública. Ele não substitui canais oficiais, serviços de emergência ou orientações de autoridades competentes.
+Sinal Aberto is a public-information tool proposal. It does not replace official
+channels, emergency services, or guidance from competent authorities.
 
-Em situações de risco imediato, procure abrigo seguro e acione os canais oficiais de emergência.
+In immediate-risk situations, seek safe shelter and contact official emergency
+channels.
 
 ## Status
 
-Projeto em fase inicial de concepção e validação de dados.
+Working MVP. A usable MCP server is implemented and tested (Python + FastMCP):
+three tools over four integrated sources (Fogo Cruzado, IBGE, ISP, COR.Rio), with
+source attribution, timestamps, and limitations on every response. All current
+enrichment is descriptive (Phase A); the probabilistic score (Phase B) and a
+public deployment are the next steps. See [Implementation Status](#implementation-status).

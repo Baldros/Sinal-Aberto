@@ -1,23 +1,28 @@
-# Ferramentas MCP do Sinal Aberto
+# Sinal Aberto MCP Tools
 
-Atualizado em: **2026-06-12**.
+Updated: **2026-06-12**.
 
-Este documento descreve a proposta inicial de ferramentas MCP públicas do Sinal Aberto. As ferramentas devem expor capacidades de produto, não detalhes internos da API Fogo Cruzado.
+This document describes the initial public MCP tool proposal for Sinal Aberto.
+The tools should expose product capabilities, not internal Fogo Cruzado API
+details.
 
-Endpoints como `GET /states`, `GET /cities` e `GET /occurrences` devem ficar encapsulados no adaptador interno de dados. O MCP deve oferecer respostas orientadas a contexto, confiança, fonte, horário e limitações.
+Endpoints such as `GET /states`, `GET /cities`, and `GET /occurrences` should
+remain encapsulated in the internal data adapter. MCP responses should be
+oriented around context, confidence, source attribution, timestamps, and
+limitations.
 
-## Princípios
+## Principles
 
-- Retornar evidências e incertezas, não afirmações absolutas.
-- Evitar precisão operacional sensível.
-- Preferir bairro, região e cluster a coordenadas exatas em respostas finais.
-- Sempre informar fonte, horário de consulta e, quando disponível, horário de última atualização.
-- Reduzir confiança quando os dados forem escassos, antigos ou inconsistentes.
-- Não sugerir rotas, desvios, fuga, aproximação de agentes ou decisões táticas.
+- Return evidence and uncertainty, not absolute claims.
+- Avoid sensitive operational precision.
+- Prefer neighborhood, region, and cluster labels over exact coordinates in final responses.
+- Always include source, query time, and, when available, source update time.
+- Reduce confidence when data is scarce, old, or inconsistent.
+- Do not suggest routes, detours, evasion, agent approach, or tactical decisions.
 
-## Ferramentas propostas
+## Proposed Tools
 
-O contrato inicial deve ter **6 ferramentas públicas**:
+The initial contract should expose **6 public tools**:
 
 1. `get_recent_activity`
 2. `get_active_clusters`
@@ -26,11 +31,20 @@ O contrato inicial deve ter **6 ferramentas públicas**:
 5. `explain_assessment`
 6. `list_data_sources`
 
+> Implementation status (2026-06-17): `get_recent_activity` and `list_data_sources`
+> are implemented, plus `resolve_location` (a disambiguation helper not in the
+> original list). `get_active_clusters`, `estimate_activity_probability`,
+> `estimate_public_impact`, and `explain_assessment` remain proposed; the
+> probability/impact tools belong to Phase B. `get_recent_activity` already returns
+> the territorial context, recent-intensity operation profile, ISP historical
+> baseline, and COR.Rio corroboration described across the other documents.
+
 ## 1. `get_recent_activity`
 
-Consulta sinais recentes de atividade armada ou policial em uma cidade, bairro ou região.
+Queries recent signs of armed or police activity in a city, neighborhood, or
+region.
 
-### Entrada
+### Input
 
 ```text
 city: string
@@ -38,7 +52,7 @@ region: string | null
 time_window: string
 ```
 
-Exemplos de `time_window`:
+Example `time_window` values:
 
 ```text
 30m
@@ -48,7 +62,7 @@ Exemplos de `time_window`:
 24h
 ```
 
-### Saída
+### Output
 
 ```text
 city
@@ -59,38 +73,41 @@ source_update_time
 activity_summary
 evidence_level
 confidence_level
+territorial_context
 recent_occurrences[]
 limitations[]
 sources[]
 ```
 
-### Descrição
+### Description
 
-Esta deve ser a ferramenta mais simples do MVP. Ela consulta dados recentes, normaliza os registros e retorna um resumo rastreável dos sinais encontrados.
+This is the simplest MVP tool. It queries recent data, normalizes records, and
+returns a traceable summary of the signals found.
 
-Deve incluir:
+It should include:
 
-- quantidade de ocorrências recentes;
-- recência da ocorrência mais nova;
-- bairros/localidades envolvidos;
-- presença de ação policial;
-- presença de agentes;
-- vítimas reportadas;
-- transporte afetado;
-- fonte e horário de atualização.
+- recent occurrence count;
+- recency of the newest occurrence;
+- involved neighborhoods/localities;
+- police-action signal;
+- agent-presence signal;
+- reported victims;
+- affected transport;
+- source and update time;
+- optional official IBGE territorial context.
 
 ## 2. `get_active_clusters`
 
-Lista clusters recentes em uma cidade dentro de uma janela temporal.
+Lists recent clusters in a city within a time window.
 
-### Entrada
+### Input
 
 ```text
 city: string
 time_window: string
 ```
 
-### Saída
+### Output
 
 ```text
 city
@@ -101,7 +118,7 @@ sources[]
 limitations[]
 ```
 
-Cada item de `clusters[]` deve conter:
+Each `clusters[]` item should contain:
 
 ```text
 cluster_id
@@ -116,17 +133,19 @@ confidence_level
 main_signals[]
 ```
 
-### Descrição
+### Description
 
-Agrupa ocorrências por proximidade temporal e geográfica para evitar respostas baseadas em eventos isolados demais.
+Groups occurrences by temporal and geographic proximity to avoid answers that
+overweight isolated records.
 
-No MVP, a clusterização pode ser feita no código da aplicação e salva em SQLite para evitar recalcular tudo a cada pergunta.
+In the MVP, clustering can run in application code and be stored in SQLite to
+avoid recalculating every query.
 
 ## 3. `estimate_activity_probability`
 
-Estima a faixa de probabilidade de atividade armada ou policial recente em uma região.
+Estimates the probability band for recent armed or police activity in a region.
 
-### Entrada
+### Input
 
 ```text
 location: string
@@ -134,9 +153,11 @@ radius: number | null
 time_window: string
 ```
 
-`location` deve aceitar bairro, região ou localidade. Latitude/longitude pode ser suportada internamente, mas a resposta pública deve evitar precisão sensível.
+`location` should accept a neighborhood, region, or locality. Latitude/longitude
+may be supported internally, but the public response should avoid sensitive
+precision.
 
-### Saída
+### Output
 
 ```text
 location
@@ -151,32 +172,35 @@ limitations[]
 sources[]
 ```
 
-### Faixas sugeridas
+### Suggested Bands
 
 ```text
-baixa evidência
-evidência moderada
-alta evidência
-evidência muito alta
+low evidence
+moderate evidence
+high evidence
+very high evidence
 ```
 
-### Descrição
+### Description
 
-Calcula uma classificação probabilística com base em recência, concentração de ocorrências, ação policial, presença de agentes, histórico local e sinais complementares.
+Calculates a probabilistic classification based on recency, concentration of
+occurrences, police action, agent presence, local history, and complementary
+signals.
 
-A saída não deve prometer que uma operação está em andamento. Deve expressar evidência recente e incerteza.
+The output must not promise that an operation is ongoing. It should express
+recent evidence and uncertainty.
 
 ## 4. `estimate_public_impact`
 
-Estima o impacto provável de um cluster específico para a população.
+Estimates the likely public impact of a specific cluster.
 
-### Entrada
+### Input
 
 ```text
 cluster_id: string
 ```
 
-### Saída
+### Output
 
 ```text
 cluster_id
@@ -192,40 +216,41 @@ limitations[]
 sources[]
 ```
 
-### Faixas sugeridas
+### Suggested Bands
 
 ```text
-baixo impacto reportado
-médio impacto reportado
-alto impacto reportado
-crítico
+low reported impact
+medium reported impact
+high reported impact
+critical
 ```
 
-### Descrição
+### Description
 
-Separa gravidade pública de probabilidade de atividade atual. Um cluster pode ter alta evidência de atividade recente, mas impacto reportado baixo, ou o inverso.
+Separates public severity from current-activity probability. A cluster may have
+strong evidence of recent activity and low reported impact, or the reverse.
 
-Deve considerar:
+It should consider:
 
-- vítimas feridas;
-- mortes;
-- múltiplas ocorrências próximas;
-- interrupção de transporte;
-- duração aproximada;
-- dispersão geográfica;
-- presença de operação policial.
+- injured victims;
+- deaths;
+- multiple nearby occurrences;
+- transport interruption;
+- approximate duration;
+- geographic spread;
+- police-operation presence.
 
 ## 5. `explain_assessment`
 
-Explica a classificação atribuída a um cluster.
+Explains the classification assigned to a cluster.
 
-### Entrada
+### Input
 
 ```text
 cluster_id: string
 ```
 
-### Saída
+### Output
 
 ```text
 cluster_id
@@ -240,32 +265,33 @@ sources[]
 limitations[]
 ```
 
-### Descrição
+### Description
 
-Fornece explicabilidade para o usuário e para o modelo cliente. Deve mostrar quais sinais sustentam a avaliação e quais fatores reduzem a confiança.
+Provides explainability for users and client models. It should show which
+signals support the assessment and which factors reduce confidence.
 
-Exemplos de sinais:
+Example signals:
 
-- ocorrência muito recente;
-- múltiplos registros próximos;
-- ação policial marcada;
-- presença de agentes;
-- vítimas reportadas;
-- transporte interrompido;
-- ausência de confirmação oficial de continuidade;
-- dados antigos ou escassos.
+- very recent occurrence;
+- multiple nearby records;
+- police action marked;
+- agent presence;
+- reported victims;
+- interrupted transport;
+- lack of official continuity confirmation;
+- old or scarce data.
 
 ## 6. `list_data_sources`
 
-Lista fontes de dados usadas pelo sistema e seu estado operacional.
+Lists the data sources used by the system and their operational status.
 
-### Entrada
+### Input
 
 ```text
 none
 ```
 
-### Saída
+### Output
 
 ```text
 sources[]
@@ -273,7 +299,7 @@ query_time
 limitations[]
 ```
 
-Cada item de `sources[]` deve conter:
+Each `sources[]` item should contain:
 
 ```text
 name
@@ -286,35 +312,38 @@ last_update_time
 known_limitations[]
 ```
 
-### Descrição
+### Description
 
-Ajuda a manter rastreabilidade e transparência. A primeira versão deve listar Fogo Cruzado como fonte principal e marcar ISP Dados, SINESP, IBGE, DATA.RIO e transporte como fontes complementares planejadas ou parcialmente integradas, conforme o estado real do sistema.
+Keeps traceability and transparency visible. The first version should list Fogo
+Cruzado as the primary source, IBGE Localidades as integrated territorial
+normalization, and ISP Dados, SINESP, IBGE Malhas, DATA.RIO, and transport
+sources as planned or partially integrated according to the real system state.
 
-## Priorização de implementação
+## Implementation Priority
 
-### MVP inicial
+### Initial MVP
 
 1. `list_data_sources`
 2. `get_recent_activity`
 3. `get_active_clusters`
 
-### MVP com score inicial
+### MVP With Initial Scoring
 
 4. `estimate_activity_probability`
 5. `estimate_public_impact`
 
-### MVP explicável
+### Explainable MVP
 
 6. `explain_assessment`
 
-## Observação de implementação
+## Implementation Note
 
-As ferramentas que usam `cluster_id` dependem da camada de clusterização e persistência local. Antes delas, o backend precisa:
+The tools that use `cluster_id` depend on clustering and local persistence.
+Before them, the backend must:
 
-- autenticar na API Fogo Cruzado;
-- consultar estados, cidades e ocorrências;
-- normalizar ocorrências em SQLite;
-- guardar metadados de fonte e atualização;
-- calcular clusters recentes;
-- calcular score inicial de atividade e impacto.
-
+- authenticate against the Fogo Cruzado API;
+- query states, cities, and occurrences;
+- normalize occurrences into SQLite;
+- store source and update metadata;
+- calculate recent clusters;
+- calculate initial activity and impact scores.

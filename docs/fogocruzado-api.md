@@ -1,73 +1,79 @@
-# API Fogo Cruzado
+# Fogo Cruzado API
 
-Atualizado em: **2026-06-12**.
+Updated: **2026-06-12**.
 
-Este documento resume a documentação oficial da API Fogo Cruzado v2 para orientar a implementação do Sinal Aberto. A API deve ser tratada como integração externa crítica: todo acesso precisa de autenticação, timeout, tratamento de erro, cache curto e registro de metadados de fonte.
+This document summarizes the official Fogo Cruzado API v2 documentation for the
+Sinal Aberto implementation. Treat the API as a critical external integration:
+every access path needs authentication, timeouts, error handling, short caching,
+and source-metadata recording.
 
-Referências oficiais:
+Official references:
 
-- Introdução: https://api.fogocruzado.org.br/docs
-- Autenticação: https://api.fogocruzado.org.br/docs/auth
+- Introduction: https://api.fogocruzado.org.br/docs
+- Authentication: https://api.fogocruzado.org.br/docs/auth
 - Endpoints: https://api.fogocruzado.org.br/docs/endpoint
-- Estados: https://api.fogocruzado.org.br/docs/endpoint/states
-- Cidades: https://api.fogocruzado.org.br/docs/endpoint/cities
-- Ocorrências: https://api.fogocruzado.org.br/docs/endpoint/occurrences
+- States: https://api.fogocruzado.org.br/docs/endpoint/states
+- Cities: https://api.fogocruzado.org.br/docs/endpoint/cities
+- Occurrences: https://api.fogocruzado.org.br/docs/endpoint/occurrences
 
-## Base da API
+## API Base
 
-A documentação oficial da versão 2.0 usa a base:
+The official v2.0 documentation uses this base URL:
 
 ```text
 https://api-service.fogocruzado.org.br/api/v2
 ```
 
-A página de endpoints informa três endpoints de dados:
+The endpoint page documents three data endpoints:
 
 - `GET /states`
 - `GET /cities`
 - `GET /occurrences`
 
-Além deles, a página de autenticação documenta:
+The authentication page documents:
 
 - `POST /auth/login`
 - `POST /auth/refresh`
 
-## Cobertura territorial e tempo
+## Territorial Coverage and Time
 
-Segundo a introdução oficial, a API fornece dados atualizados sobre tiroteios e disparos de arma de fogo nas regiões metropolitanas monitoradas pelo Fogo Cruzado, incluindo Rio de Janeiro, Recife, Bahia e Pará, com diferentes datas históricas de início por região.
+According to the official introduction, the API provides updated data about
+shootings and gunfire in metropolitan regions monitored by Fogo Cruzado,
+including Rio de Janeiro, Recife, Bahia, and Para, with different historical
+start dates by region.
 
-A documentação também informa que:
+The documentation also states that:
 
-- as datas e horários retornados pela API devem ser interpretados no fuso de Brasília (`America/Sao_Paulo`, UTC-3);
-- a API retorna metadados de última atualização em headers HTTP;
-- `X-Last-Update` indica a última atualização geral das ocorrências;
-- `X-Last-Update-State` indica a última atualização específica por estado quando aplicável.
+- returned dates and times should be interpreted in Brasilia time (`America/Sao_Paulo`, UTC-3);
+- the API returns last-update metadata in HTTP headers;
+- `X-Last-Update` indicates the latest general occurrence update;
+- `X-Last-Update-State` indicates the state-specific latest update when applicable.
 
-Esses headers devem ser persistidos junto com os dados consultados para rastreabilidade e cache.
+Persist these headers with queried data for traceability and cache control.
 
-## Autenticação
+## Authentication
 
 ### `POST /auth/login`
 
-Uso: obter token JWT de acesso.
+Purpose: obtain a JWT access token.
 
 Request:
 
 ```json
 {
-  "email": "seu@email",
-  "password": "sua senha"
+  "email": "your@email",
+  "password": "your password"
 }
 ```
 
-Resposta esperada:
+Expected response:
 
 - HTTP `201`;
 - `code: 201`;
 - `data.accessToken`;
-- `data.expiresIn`, em segundos.
+- `data.expiresIn`, in seconds.
 
-O token retornado deve ser enviado nos demais endpoints como Bearer token:
+Send the returned token to other endpoints as a bearer token:
 
 ```text
 Authorization: Bearer <accessToken>
@@ -75,40 +81,43 @@ Authorization: Bearer <accessToken>
 
 ### `POST /auth/refresh`
 
-Uso: renovar token antes do vencimento.
+Purpose: refresh a token before expiration.
 
 Request:
 
-- método `POST`;
-- header `Authorization: Bearer <accessToken>` com token ainda válido.
-- na validação prática da API em 2026-06-12, também foi necessário enviar o token no corpo como `{"accessToken": "<accessToken>"}`; implementar o cliente com esse corpo para alinhar com o comportamento real.
+- method `POST`;
+- header `Authorization: Bearer <accessToken>` with a still-valid token;
+- in practical API validation on 2026-06-12, the token also had to be sent in
+  the body as `{"accessToken": "<accessToken>"}`. Implement the client with
+  this body to match observed behavior.
 
-Resposta esperada:
+Expected response:
 
 - HTTP `201`;
 - `code: 201`;
-- novo `data.accessToken`;
-- novo `data.expiresIn`.
+- new `data.accessToken`;
+- new `data.expiresIn`.
 
-### Regras de implementação
+### Implementation Rules
 
-- Nunca registrar email, senha ou token em logs.
-- Carregar credenciais apenas de variáveis de ambiente ou secret manager.
-- Renovar o token antes de `expiresIn` quando possível.
-- Em `401` ou token expirado, tentar refresh uma vez; se falhar, fazer novo login.
-- Em falhas repetidas de autenticação, retornar erro controlado para a camada MCP, sem vazar detalhes sensíveis.
+- Never log email, password, or token values.
+- Load credentials only from environment variables or a secret manager.
+- Refresh the token before `expiresIn` when possible.
+- On `401` or expired token, try refresh once; if that fails, perform a new login.
+- On repeated authentication failures, return a controlled error to the MCP
+  layer without leaking sensitive details.
 
-## Endpoints de dados
+## Data Endpoints
 
-Todos os endpoints de dados devem ser chamados com Bearer token.
+All data endpoints must be called with a bearer token.
 
 ### `GET /states`
 
-Uso: listar estados monitorados.
+Purpose: list monitored states.
 
-Parâmetros documentados: nenhum.
+Documented parameters: none.
 
-Resposta esperada:
+Expected response:
 
 ```text
 msg
@@ -117,24 +126,24 @@ code
 data[]
 ```
 
-Cada item de `data` deve conter, no mínimo:
+Each `data` item should contain at least:
 
 ```text
 id
 name
 ```
 
-Uso no Sinal Aberto:
+Sinal Aberto usage:
 
-- descobrir `idState` para chamadas de ocorrências;
-- manter tabela local de estados monitorados;
-- relacionar cache e metadados por estado.
+- discover `idState` for occurrence calls;
+- keep a local table of monitored states;
+- relate cache and metadata by state.
 
 ### `GET /cities`
 
-Uso: listar cidades monitoradas.
+Purpose: list monitored cities.
 
-Filtros documentados:
+Documented filters:
 
 ```text
 cityId
@@ -142,7 +151,7 @@ cityName
 stateId
 ```
 
-Resposta esperada:
+Expected response:
 
 ```text
 msg
@@ -151,7 +160,7 @@ code
 data[]
 ```
 
-Cada item de `data` deve conter, no mínimo:
+Each `data` item should contain at least:
 
 ```text
 id
@@ -160,18 +169,18 @@ state.id
 state.name
 ```
 
-Uso no Sinal Aberto:
+Sinal Aberto usage:
 
-- mapear nome de cidade para `id`;
-- filtrar ocorrências por cidade;
-- montar cache local de cidades e estados;
-- evitar ambiguidade em consultas por nome.
+- map city names to `id`;
+- filter occurrences by city;
+- build a local cache of cities and states;
+- avoid ambiguity in name-based queries.
 
 ### `GET /occurrences`
 
-Uso: consultar ocorrências. Este é o endpoint principal para o MVP.
+Purpose: query occurrences. This is the main MVP endpoint.
 
-Filtros e parâmetros documentados em exemplos oficiais:
+Filters and parameters documented in official examples:
 
 ```text
 order
@@ -184,15 +193,16 @@ finaldate
 typeOccurrence
 ```
 
-Observações práticas:
+Practical notes:
 
-- `idState` aparece nos exemplos oficiais e, na validação local, foi necessário para consultar ocorrências. Tratar `idState` como obrigatório no MVP.
-- `idCities` pode aparecer repetido na query string para filtrar múltiplas cidades.
-- `initialdate` e `finaldate` usam formato de data como `YYYY-MM-DD` nos exemplos oficiais.
-- `order` deve ser tratado como ordenação temporal, usando `DESC` para consultas recentes.
-- `page` e `take` controlam paginação.
+- `idState` appears in official examples and was required during local
+  validation. Treat `idState` as required in the MVP.
+- `idCities` may appear repeatedly in the query string to filter multiple cities.
+- `initialdate` and `finaldate` use `YYYY-MM-DD` in official examples.
+- `order` should be treated as temporal ordering; use `DESC` for recent queries.
+- `page` and `take` control pagination.
 
-Resposta esperada:
+Expected response:
 
 ```text
 msg
@@ -202,7 +212,7 @@ pageMeta
 data[]
 ```
 
-`pageMeta` deve conter:
+`pageMeta` should contain:
 
 ```text
 page
@@ -213,14 +223,12 @@ hasPreviousPage
 hasNextPage
 ```
 
-Cada item de `data` representa uma ocorrência e pode conter:
+Each `data` item represents an occurrence and may contain:
 
 ```text
 id
 documentNumber
-address
 state
-region
 city
 neighborhood
 subNeighborhood
@@ -230,34 +238,32 @@ longitude
 date
 policeAction
 agentPresence
-relatedRecord
 contextInfo
 transports
 victims
 animalVictims
 ```
 
-Campos de maior valor para o Sinal Aberto:
+High-priority fields for Sinal Aberto:
 
-- `date`: recência da ocorrência;
-- `latitude` e `longitude`: agrupamento espacial;
-- `state`, `city`, `neighborhood`, `subNeighborhood`, `locality`: normalização territorial;
-- `policeAction`: sinal de ação/operação policial;
-- `agentPresence`: presença de agentes;
-- `contextInfo.mainReason`: motivo principal;
-- `contextInfo.complementaryReasons`: motivos complementares;
-- `contextInfo.clippings`: recortes relevantes;
-- `contextInfo.massacre`: sinal de ocorrência crítica;
-- `contextInfo.policeUnit`: unidade policial envolvida, quando informada;
-- `transports`: impacto em transporte;
-- `victims`: vítimas humanas;
-- `animalVictims`: vítimas animais.
+- `date`: occurrence recency;
+- `latitude` and `longitude`: spatial grouping, kept out of public responses when sensitive;
+- `state`, `city`, `neighborhood`, `subNeighborhood`, `locality`: territorial normalization;
+- `policeAction`: police-action signal;
+- `agentPresence`: agent-presence signal;
+- `contextInfo.mainReason`: main reason;
+- `contextInfo.complementaryReasons`: complementary reasons;
+- `contextInfo.clippings`: relevant clippings;
+- `contextInfo.massacre`: critical-occurrence signal;
+- `contextInfo.policeUnit`: involved police unit, when provided;
+- `transports`: transport impact;
+- `victims`: human victims;
+- `animalVictims`: animal victims.
 
-## Estrutura de `contextInfo`
+## `contextInfo` Structure
 
-`contextInfo` agrupa contexto da ocorrência.
-
-Campos documentados:
+`contextInfo` should be treated as the main semantic container for the
+occurrence. In observed responses it can include:
 
 ```text
 mainReason
@@ -267,199 +273,50 @@ massacre
 policeUnit
 ```
 
-Uso no score:
+Use these fields carefully:
 
-- `mainReason` e `complementaryReasons` ajudam a separar ação policial, operação policial, disputa, execução, tentativa de roubo e outros contextos;
-- `clippings` ajuda a reconhecer recortes específicos, como feminicídio, perseguição, presídio, shopping, tiroteio contínuo e outros;
-- `massacre` aumenta gravidade e reduz margem para respostas genéricas;
-- `policeUnit` pode aumentar evidência de participação institucional, mas deve ser usado com cuidado para não produzir resposta operacional sensível.
+- `mainReason` and `complementaryReasons` help separate police action, police
+  operation, disputes, executions, attempted robbery, and other contexts.
+- `clippings` help identify specific labels such as feminicide, chase, prison,
+  shopping mall, continuous shooting, and others.
+- `massacre` increases severity and reduces room for generic answers.
+- `policeUnit` can indicate official involvement but should not be exposed with
+  sensitive precision in public-facing answers.
 
-As tabelas oficiais de motivos, recortes e qualificações ficam na página de ocorrências. A implementação deve evitar hardcode espalhado: se esses valores forem usados em regras, concentrar em uma camada de normalização testada.
+## Response Handling
 
-## Estrutura de `transports`
+The client should normalize API responses into internal records before any MCP
+tool builds natural-language output.
 
-`transports` informa impactos em transporte relacionados à ocorrência.
+Minimum normalization:
 
-Campos documentados:
+- parse dates into timezone-aware datetimes;
+- keep source update headers;
+- normalize city/state/neighborhood labels;
+- count victims and deaths defensively;
+- detect transport interruption;
+- keep raw IDs for traceability;
+- avoid exposing exact coordinates in public MCP responses.
 
-```text
-id
-occurrenceId
-transport
-interruptedTransport
-dateInterruption
-releaseDate
-transportDescription
-```
+## Error and Cache Strategy
 
-Uso no score:
+- Use explicit HTTP timeouts.
+- Cache city and state catalogs for a short period.
+- Cache occurrence queries by city, state, date range, and page where useful.
+- Store `X-Last-Update` to explain data freshness.
+- Surface source failures as limitations when the tool can still return partial context.
+- Fail closed on authentication problems and do not expose secrets.
 
-- `interruptedTransport` é sinal direto de impacto público;
-- `dateInterruption` e `releaseDate` ajudam a estimar se o impacto ainda pode estar ativo;
-- `transportDescription` pode enriquecer a explicação, desde que a resposta não vire orientação tática de deslocamento.
+## Integration Tests
 
-## Estrutura de `victims`
+The integration tests in `tests/integration/test_fogocruzado_api.py` validate:
 
-`victims` informa vítimas humanas.
+- login returns a bearer token;
+- refresh returns a new bearer token;
+- `/states` contract;
+- `/cities` contract and filters;
+- `/occurrences` contract, pagination, date filters, multiple city filters, and `typeOccurrence`;
+- expected nested structures in `contextInfo`, `transports`, `victims`, and `animalVictims`.
 
-Campos documentados:
-
-```text
-id
-occurrenceId
-type
-situation
-circumstances
-deathDate
-personType
-age
-ageGroup
-genre
-race
-place
-serviceStatus
-qualifications
-politicalPosition
-politicalStatus
-partie
-coorporation
-agentPosition
-agentStatus
-unit
-```
-
-Uso no score:
-
-- `situation` diferencia feridos e mortos;
-- `personType`, `qualifications`, `agentStatus` e `serviceStatus` ajudam a entender se há civis, agentes de segurança, políticos ou outros perfis envolvidos;
-- `deathDate` pode ajudar a separar ocorrência antiga de impacto ainda relevante;
-- dados pessoais ou sensíveis devem ser usados apenas de forma agregada e responsável.
-
-## Estrutura de `animalVictims`
-
-`animalVictims` informa vítimas animais.
-
-Campos documentados:
-
-```text
-id
-occurrenceId
-name
-type
-animalType
-situation
-circumstances
-deathDate
-```
-
-Uso no MVP:
-
-- armazenar sem descartar, para preservar contrato da API;
-- não usar como sinal central do score inicial, salvo se a análise futura justificar.
-
-## Estratégia de ingestão para o MVP
-
-Fluxo recomendado:
-
-1. Autenticar com `POST /auth/login`.
-2. Renovar token com `POST /auth/refresh` quando necessário.
-3. Sincronizar `GET /states`.
-4. Sincronizar `GET /cities`, preferencialmente por `stateId` quando houver recorte.
-5. Consultar `GET /occurrences` por `idState`, janela temporal e paginação.
-6. Persistir headers `X-Last-Update` e `X-Last-Update-State` quando presentes.
-7. Normalizar ocorrências em SQLite.
-8. Pré-calcular ou cachear clusters recentes para evitar recalcular tudo a cada chamada MCP.
-
-Para consultas recentes:
-
-```text
-GET /occurrences?order=DESC&page=1&take=20&idState=<state_id>&initialdate=<YYYY-MM-DD>&finaldate=<YYYY-MM-DD>
-```
-
-Para múltiplas cidades:
-
-```text
-GET /occurrences?order=DESC&page=1&take=20&idState=<state_id>&idCities=<city_id_1>&idCities=<city_id_2>
-```
-
-## Tratamento de erros e limites
-
-Regras mínimas:
-
-- configurar timeout explícito em todas as requisições;
-- fazer retry apenas em falhas transitórias, com limite baixo;
-- não fazer retry agressivo em `401`, `403` ou `4xx` de validação;
-- registrar status code, endpoint, parâmetros não sensíveis e horário;
-- nunca registrar token, email ou senha;
-- retornar mensagens conservadoras quando a API estiver indisponível;
-- preservar horário de consulta e headers de atualização para rastreabilidade.
-
-## Variáveis de ambiente
-
-Para rodar localmente:
-
-```text
-FOGOCRUZADO_EMAIL=seu@email
-FOGOCRUZADO_PASSWORD=sua_senha
-```
-
-Opcionalmente:
-
-```text
-FOGOCRUZADO_API_BASE_URL=https://api-service.fogocruzado.org.br/api/v2
-```
-
-Aliases aceitos pela suíte atual de integração:
-
-- `FOGO_CRUZADO_EMAIL`
-- `FOGOCRUZADO_USER`
-- `FOGO_CRUZADO_USER`
-- `FOGO_CRUZADO_PASSWORD`
-
-Como compatibilidade local, se esses nomes explícitos não existirem, os testes também aceitam `EMAIL`, `USER`, `USERNAME`, `email`, `user` ou `username` e `PASSWORD`, `PASS`, `password` ou `pass`, mas apenas quando vierem do arquivo `.env`.
-
-## Cobertura de testes de integração
-
-Execute:
-
-```powershell
-.\.venv\Scripts\python.exe -m pytest tests/integration -m integration
-```
-
-Cobertura mínima que deve existir para considerar o acesso à API validado:
-
-- `POST /auth/login`: retorna `data.accessToken` e `data.expiresIn`;
-- `POST /auth/refresh`: renova token com Bearer token válido;
-- `GET /states`: retorna lista com `id` e `name`;
-- `GET /cities`: retorna lista com `id`, `name`, `state.id` e `state.name`;
-- `GET /cities?cityId=...`: filtra por cidade;
-- `GET /cities?cityName=...`: filtra por nome;
-- `GET /cities?stateId=...`: filtra por estado;
-- `GET /occurrences`: retorna `pageMeta` e lista de ocorrências;
-- `GET /occurrences` com `initialdate` e `finaldate`: valida filtro temporal;
-- `GET /occurrences` com múltiplos `idCities`: valida filtro por cidades;
-- `GET /occurrences` com paginação: valida `page`, `take` e flags de `pageMeta`;
-- headers `X-Last-Update` e `X-Last-Update-State`, quando presentes;
-- contrato mínimo dos objetos `contextInfo`, `transports`, `victims` e `animalVictims`.
-
-Os testes não devem imprimir usuário, senha nem token. Se credenciais não estiverem configuradas, a suíte deve ser pulada.
-
-## Cobertura atual
-
-A suíte de integração atual valida:
-
-- login e retorno de token;
-- refresh de token, incluindo o corpo `accessToken` exigido pela API real;
-- contrato de `/states`;
-- contrato de `/cities`;
-- filtros de `/cities` por `cityId`, `cityName` e `stateId`;
-- contrato de `/occurrences`;
-- headers `X-Last-Update` e `X-Last-Update-State` em `/occurrences`;
-- `pageMeta` e paginação de `/occurrences`;
-- filtro temporal de `/occurrences` com `initialdate` e `finaldate`;
-- filtro de `/occurrences` com múltiplos `idCities`;
-- filtro `typeOccurrence=withVictim`;
-- contrato mínimo de `contextInfo`;
-- contrato mínimo de `transports`, `victims` e `animalVictims` quando essas listas vêm preenchidas.
-
-Essa suíte ainda é de integração externa, não de regra de negócio do Sinal Aberto. Os testes de normalização, cache, persistência SQLite, clusterização e score probabilístico devem ser criados quando essas camadas existirem no código.
+These tests are marked `integration` and require credentials through
+`FOGOCRUZADO_EMAIL` and `FOGOCRUZADO_PASSWORD`, or compatible `.env` values.

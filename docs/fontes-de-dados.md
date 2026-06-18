@@ -1,45 +1,53 @@
-# Fontes de dados do Sinal Aberto
+# Sinal Aberto Data Sources
 
-Este documento resume as fontes de dados consideradas para o Sinal Aberto, com foco em utilidade, forma de acesso e referências de validação.
+This document summarizes the data sources considered for Sinal Aberto, focusing
+on utility, access method, and validation references.
 
-A regra geral do projeto é trabalhar apenas com dados públicos, APIs oficiais ou canais de acesso publicados pelos próprios mantenedores. Raspagem de páginas deve ser tratada como último recurso, nunca como fonte central do produto.
+The project rule is to work only with public data, official APIs, or access
+channels published by the maintainers themselves. Page scraping should be a last
+resort, never the product's central source.
 
-## Resumo das formas de acesso
+## Access Summary
 
-| Fonte | Papel no projeto | Forma de acesso recomendada | Scraping? |
+| Source | Role in the project | Recommended access method | Scraping? |
 |---|---|---|---|
-| Fogo Cruzado | Fonte principal de ocorrências armadas recentes | API oficial com autenticação JWT e autorização prévia | Não |
-| ISP Dados RJ | Histórico oficial de segurança pública no RJ | Downloads públicos em CSV, XLS, KML e Shapefile | Não inicialmente |
-| SINESP / MJSP | Indicadores nacionais agregados de segurança pública | Downloads públicos em XLSX, ZIP e PDF no portal de dados | Não inicialmente |
-| IBGE Localidades | Normalização territorial oficial | API REST oficial | Não |
-| IBGE Malhas | Geometrias oficiais de UFs, municípios e regiões | API REST oficial com GeoJSON, TopoJSON ou SVG | Não |
-| DATA.RIO | Camadas urbanas do município do Rio | Portal de dados, downloads e eventuais serviços geográficos | Validar dataset por dataset |
-| GTFS / transporte | Rotas, paradas, alertas e impacto operacional | Feeds GTFS/GTFS Realtime quando publicados por operadores/autoridades | Evitar; usar apenas feeds oficiais |
-| Imprensa e redes sociais oficiais | Contexto e confirmação complementar | RSS, API oficial ou páginas públicas, quando permitido | Só como último recurso e com baixo peso |
+| Fogo Cruzado | Primary source for recent armed occurrences | Official API with JWT authentication and prior authorization | No |
+| ISP Dados RJ | Official public-safety history in RJ | Public CSV, XLS, KML, and Shapefile downloads | Not initially |
+| SINESP / MJSP | Aggregate national public-safety indicators | Public XLSX, ZIP, and PDF downloads from the data portal | Not initially |
+| IBGE Localidades | Official territorial normalization | Official REST API | No |
+| IBGE Malhas | Official geometries for states, municipalities, and regions | Official REST API with GeoJSON, TopoJSON, or SVG | No |
+| DATA.RIO | Urban layers for Rio de Janeiro city | Data portal, downloads, and geographic services | Validate per dataset |
+| GTFS / transport | Routes, stops, alerts, and operational impact | GTFS/GTFS Realtime feeds when published by operators or authorities | Avoid; use official feeds only |
+| Press and official social channels | Context and complementary confirmation | RSS, official APIs, or public pages when allowed | Only as a last resort and with low weight |
 
 ---
 
 ## 1. Fogo Cruzado
 
-**Papel no Sinal Aberto:** fonte primária para ocorrências de tiroteios, disparos de arma de fogo, presença de agentes, ação/operação policial, vítimas e transporte afetado.
+**Role in Sinal Aberto:** primary source for shooting, gunfire, agent presence,
+police action/operation, victim, and affected-transport occurrences.
 
-**Por que é útil:** é a fonte mais alinhada com a proposta de estimar atividade armada/policial em tempo quase real. A documentação informa que a API fornece dados atualizados sobre tiroteios e disparos nas regiões metropolitanas do Rio de Janeiro, Recife, Bahia e Pará.
+**Why it is useful:** this is the source most aligned with estimating armed or
+police activity in near real time. The documentation says the API provides
+updated data on shootings and gunfire in the metropolitan regions of Rio de
+Janeiro, Recife, Bahia, and Para.
 
-**Forma de acesso:**
+**Access method:**
 
-- API oficial v2.
-- Requer autorização prévia de uso.
-- Autenticação via JWT.
-- Login por `POST /api/v2/auth/login`.
-- Refresh por `POST /api/v2/auth/refresh`.
-- Endpoint principal: `GET /occurrences`.
-- O token deve ser enviado como Bearer Token no header da requisição.
-- A API informa headers de última atualização, como `X-Last-Update` e `X-Last-Update-State`, úteis para cache e sincronização.
+- Official API v2.
+- Requires prior authorization.
+- JWT authentication.
+- Login through `POST /api/v2/auth/login`.
+- Refresh through `POST /api/v2/auth/refresh`.
+- Main endpoint: `GET /occurrences`.
+- Token sent as a bearer token in the request header.
+- Last-update headers such as `X-Last-Update` and `X-Last-Update-State` support
+  cache and synchronization.
 
-**Dados relevantes para o score:**
+**Fields relevant to scoring:**
 
 - `date`.
-- `latitude` e `longitude`.
+- `latitude` and `longitude`.
 - `state`, `city`, `neighborhood`, `subNeighborhood`, `locality`.
 - `policeAction`.
 - `agentPresence`.
@@ -54,349 +62,317 @@ A regra geral do projeto é trabalhar apenas com dados públicos, APIs oficiais 
 - `victims.situation`.
 - `victims.personType`.
 
-**Uso sugerido:**
+**Suggested use:**
 
-- Fonte de evidência recente.
-- Clusterização temporal e geográfica.
-- Cálculo de probabilidade de atividade atual.
-- Cálculo de impacto reportado.
-- Detecção de ocorrências com ação/operação policial.
+- Recent-evidence source.
+- Temporal and geographic clustering.
+- Current-activity probability calculation.
+- Reported-impact calculation.
+- Detection of occurrences with police action/operation.
 
-**Limitações:**
+**Limitations:**
 
-- Não deve ser tratada como radar completo de todas as operações policiais.
-- Operações sem disparos ou sem registro podem não aparecer.
-- É necessário validar latência real entre fato, registro e atualização na API.
+- Should not be treated as a complete radar for all police operations.
+- Operations without gunfire or reports may not appear.
+- Real latency between event, report, and API update must be validated.
 
-**Referências:**
+**References:**
 
-- Plataforma da API: https://api.fogocruzado.org.br/
-- Documentação geral: https://api.fogocruzado.org.br/docs
-- Autenticação: https://api.fogocruzado.org.br/docs/auth
-- Ocorrências: https://api.fogocruzado.org.br/docs/endpoint/occurrences
-- Pacote R/Python citado pela plataforma: https://github.com/felipesbarros/crossfire
+- API platform: https://api.fogocruzado.org.br/
+- General documentation: https://api.fogocruzado.org.br/docs
+- Authentication: https://api.fogocruzado.org.br/docs/auth
+- Occurrences: https://api.fogocruzado.org.br/docs/endpoint/occurrences
+- R/Python package cited by the platform: https://github.com/felipesbarros/crossfire
 
 ---
 
 ## 2. ISP Dados RJ
 
-**Papel no Sinal Aberto:** base auxiliar para histórico oficial, contexto territorial e construção de priors no estado do Rio de Janeiro.
+**Role in Sinal Aberto:** auxiliary base for official history, territorial
+context, and prior construction in Rio de Janeiro state.
 
-**Por que é útil:** o portal ISPDados publica bases de registros criminais e atividade policial do estado do Rio de Janeiro. As estatísticas são construídas a partir de Registros de Ocorrência e informações complementares de órgãos de segurança. Também há arquivos auxiliares como população, divisão territorial, bases cartográficas, notas metodológicas e dicionários.
+**Why it is useful:** ISPDados publishes criminal-record and police-activity
+datasets for Rio de Janeiro state. The statistics are built from occurrence
+reports and complementary public-safety-agency information. The portal also
+contains population files, territorial division, cartographic bases,
+methodological notes, and dictionaries.
 
-**Forma de acesso:**
+**Access method:**
 
-- Portal público de dados abertos.
-- Downloads estruturados em CSV, XLS, KML e Shapefile, dependendo do conjunto.
-- Painéis HTML/ISP Conecta para consulta visual.
-- Não há necessidade inicial de scraping: os links de CSV e arquivos geográficos podem ser baixados periodicamente.
+- Public open-data portal.
+- Structured downloads in CSV, XLS, KML, and Shapefile depending on dataset.
+- HTML dashboards/ISP Conecta for visual browsing.
+- No initial scraping requirement because CSV and geographic files can be
+  downloaded periodically.
 
-**Dados relevantes:**
+**Relevant data:**
 
-- Estatísticas de segurança por área de delegacia desde 01/2003.
-- Estatísticas mensais no estado desde 01/1991.
-- Estatísticas mensais por município desde 2014.
-- Letalidade violenta.
-- Armas apreendidas.
-- Policiais mortos em serviço.
-- Feminicídio.
-- Divisão territorial de segurança: CISP, AISP, RISP.
-- Bases cartográficas digitais em KML e Shapefile.
-- Dicionários de variáveis e notas metodológicas.
+- Public-safety statistics by police-station area since 2003-01.
+- Monthly state statistics since 1991-01.
+- Monthly municipal statistics since 2014.
+- Violent lethality.
+- Seized firearms.
+- Police officers killed on duty.
+- Feminicide.
+- Public-safety territorial divisions: CISP, AISP, RISP.
+- Digital cartographic bases in KML and Shapefile.
+- Variable dictionaries and methodological notes.
 
-**Uso sugerido:**
+**Suggested use:**
 
-- Histórico local para calibrar o prior territorial.
-- Comparação entre áreas.
-- Contexto de letalidade e recorrência.
-- Normalização territorial por CISP/AISP/RISP.
-- Enriquecimento de clusters com histórico oficial.
+- Local history for territorial priors.
+- Area comparison.
+- Lethality and recurrence context.
+- CISP/AISP/RISP territorial normalization.
+- Enrichment of clusters with official history.
 
-**Limitações:**
+**Limitations:**
 
-- Não é fonte de tempo real.
-- As estatísticas se baseiam na data de confecção do Registro de Ocorrência, não necessariamente na data exata do fato.
-- Revisões e retificações podem ocorrer.
+- Not a real-time source.
+- Statistics are based on occurrence-report creation date, not necessarily the
+  exact event date.
+- Revisions and corrections can happen.
 
-**Referências:**
+**References:**
 
-- Portal ISPDados: https://www.ispdados.rj.gov.br/
-- Estatísticas de Segurança Pública: https://www.ispdados.rj.gov.br/estatistica.html
-- Divisão Territorial de Segurança Pública: https://www.ispdados.rj.gov.br/Conteudo.html
-- Notas Metodológicas e Dicionários: https://www.ispdados.rj.gov.br/Notas.html
-- Visualização de Dados do ISP: https://www.ispvisualizacao.rj.gov.br/
+- ISPDados portal: https://www.ispdados.rj.gov.br/
+- Public-safety statistics: https://www.ispdados.rj.gov.br/estatistica.html
+- Public-safety territorial division: https://www.ispdados.rj.gov.br/Conteudo.html
+- Methodological notes and dictionaries: https://www.ispdados.rj.gov.br/Notas.html
+- ISP data visualization: https://www.ispvisualizacao.rj.gov.br/
 - ISP Conecta: https://ispconecta.rj.gov.br/
 
 ---
 
-## 3. SINESP / Ministério da Justiça e Segurança Pública
+## 3. SINESP / Ministry of Justice and Public Security
 
-**Papel no Sinal Aberto:** base auxiliar nacional para contexto agregado, comparação municipal/estadual e indicadores oficiais fora do RJ.
+**Role in Sinal Aberto:** national auxiliary base for aggregate context,
+municipal/state comparison, and official indicators outside RJ.
 
-**Por que é útil:** o dataset de Ocorrências Criminais do SINESP reúne indicadores nacionais de segurança pública informados pelos estados e pelo Distrito Federal. É útil para análise comparativa, mas não para tempo real.
+**Why it is useful:** the SINESP criminal-occurrence dataset gathers national
+public-safety indicators reported by states and the Federal District. It is
+useful for comparative analysis, but not real-time detection.
 
-**Forma de acesso:**
+**Access method:**
 
-- Portal de dados públicos do Ministério da Justiça e Segurança Pública.
-- Downloads em XLSX, ZIP e PDF.
-- Recursos publicados incluem dados por município, dados por UF, base VDE e dicionários.
-- Pode-se investigar automação via padrão CKAN do portal, mas a forma validada inicialmente é o download dos recursos publicados na própria página.
+- Public data portal from the Ministry of Justice and Public Security.
+- Downloads in XLSX, ZIP, and PDF.
+- Published resources include municipal data, state data, VDE database, and data
+  dictionaries.
+- CKAN automation can be investigated; the initially validated method is
+  downloading resources from the published page.
 
-**Dados relevantes:**
+**Relevant data:**
 
-- Dados Nacionais de Segurança Pública por município.
-- Dados Nacionais de Segurança Pública por UF.
-- Base de Dados VDE em ZIP.
-- Dicionário de Dados por município e UF.
-- Indicadores como homicídio doloso, roubo seguido de morte, feminicídio, morte por intervenção de agente do Estado, tráfico de drogas, apreensão de arma de fogo, pessoa desaparecida, entre outros.
+- National public-safety data by municipality.
+- National public-safety data by state.
+- VDE database in ZIP.
+- Data dictionaries by municipality and state.
+- Indicators such as intentional homicide, robbery followed by death,
+  feminicide, death caused by state-agent intervention, drug trafficking,
+  firearm seizure, missing person, and others.
 
-**Uso sugerido:**
+**Suggested use:**
 
-- Contexto histórico e comparativo.
-- Priors municipais/estaduais fora do Rio de Janeiro.
-- Benchmarks nacionais.
-- Avaliação macro de risco estrutural.
+- Historical and comparative context.
+- Municipal/state priors outside Rio de Janeiro.
+- National benchmarks.
+- Macro-level structural-risk assessment.
 
-**Limitações:**
+**Limitations:**
 
-- Dados são agregados.
-- Não serve para detecção de eventos em andamento.
-- A própria página informa que os dados podem refletir o nível de alimentação e consolidação das UFs na data de extração, com atualizações posteriores.
+- Aggregate data.
+- Not suitable for ongoing-event detection.
+- The portal notes that data can reflect the reporting and consolidation level
+  of each state at extraction time, with later updates.
 
-**Referências:**
+**References:**
 
-- Dataset Ocorrências Criminais - SINESP: https://dados.mj.gov.br/dataset/sistema-nacional-de-estatisticas-de-seguranca-publica
-- Portal de Dados MJSP: https://dados.mj.gov.br/
+- SINESP criminal occurrences dataset: https://dados.mj.gov.br/dataset/sistema-nacional-de-estatisticas-de-seguranca-publica
+- MJSP data portal: https://dados.mj.gov.br/
 
 ---
 
 ## 4. IBGE Localidades
 
-**Papel no Sinal Aberto:** normalização territorial oficial.
+**Role in Sinal Aberto:** official territorial normalization.
 
-**Por que é útil:** fornece códigos e hierarquias territoriais oficiais do IBGE para países, UFs, municípios, distritos, subdistritos, regiões metropolitanas e outras divisões.
+**Why it is useful:** provides official IBGE codes and territorial hierarchies
+for countries, states, municipalities, districts, subdistricts, metropolitan
+regions, and other divisions.
 
-**Forma de acesso:**
+**Access method:**
 
-- API REST oficial.
-- Retorno estruturado em JSON.
-- Não requer scraping.
+- Official REST API.
+- Structured JSON response.
+- No scraping required.
 
-**Dados relevantes:**
+**Relevant data:**
 
-- UFs.
-- Municípios.
-- Distritos e subdistritos.
-- Regiões metropolitanas.
-- Regiões geográficas imediatas e intermediárias.
-- Códigos oficiais IBGE.
+- States.
+- Municipalities.
+- Districts and subdistricts.
+- Metropolitan regions.
+- Immediate and intermediate geographic regions.
+- Official IBGE codes.
 
-**Uso sugerido:**
+**Suggested use:**
 
-- Padronizar nomes e códigos de municípios.
-- Resolver ambiguidades territoriais.
-- Relacionar ocorrência, município, UF e região.
-- Garantir interoperabilidade com SINESP, ISP e outras bases públicas.
+- Standardize municipality names and codes.
+- Resolve territorial ambiguity.
+- Relate occurrence, municipality, state, and region.
+- Ensure interoperability with SINESP, ISP, and other public datasets.
 
-**Referências:**
+**References:**
 
-- API de Localidades: https://servicodados.ibge.gov.br/api/docs/localidades
+- Localidades API: https://servicodados.ibge.gov.br/api/docs/localidades
 
 ---
 
-## 5. IBGE Malhas Geográficas
+## 5. IBGE Malhas Geograficas
 
-**Papel no Sinal Aberto:** geometrias oficiais para mapas, geofencing e agregação territorial.
+**Role in Sinal Aberto:** official geometries for maps, geofencing, and
+territorial aggregation.
 
-**Por que é útil:** permite obter malhas simplificadas de unidades político-administrativas do Brasil em formatos adequados para aplicações web.
+**Why it is useful:** allows simplified meshes of Brazilian
+political-administrative units in formats suited for web applications.
 
-**Forma de acesso:**
+**Access method:**
 
-- API REST oficial.
-- Formatos disponíveis incluem SVG, GeoJSON e TopoJSON.
-- Não requer scraping.
+- Official REST API.
+- Available formats include SVG, GeoJSON, and TopoJSON.
+- No scraping required.
 
-**Dados relevantes:**
+**Relevant data:**
 
-- Malhas de municípios.
-- Malhas de UFs.
-- Malhas de regiões e outras divisões disponíveis.
-- Geometrias simplificadas para visualização e análise espacial.
+- State geometry.
+- Municipality geometry.
+- Regional geometry.
+- Simplified meshes for web use.
 
-**Uso sugerido:**
+**Suggested use:**
 
-- Converter coordenadas em município/UF.
-- Criar mapas e polígonos de referência.
-- Agregar clusters por limites oficiais.
-- Construir camadas de visualização.
+- Official map overlays.
+- Point-in-polygon enrichment.
+- Territorial aggregation by official boundaries.
+- Safe approximate areas instead of exact occurrence coordinates.
 
-**Referências:**
+**References:**
 
-- API de Malhas Geográficas: https://servicodados.ibge.gov.br/api/docs/malhas?versao=3
+- Malhas API: https://servicodados.ibge.gov.br/api/docs/malhas
 
 ---
 
 ## 6. DATA.RIO
 
-**Papel no Sinal Aberto:** enriquecimento urbano da cidade do Rio de Janeiro.
+**Role in Sinal Aberto:** municipal urban layers for Rio de Janeiro city.
 
-**Por que é útil:** o portal DATA.RIO reúne dados públicos municipais que podem apoiar camadas urbanas, limites de bairros, equipamentos públicos, infraestrutura, serviços e contexto local.
+**Why it is useful:** provides neighborhood boundaries, administrative regions,
+public facilities, urban infrastructure, and other city layers that can enrich
+the public-impact model.
 
-**Forma de acesso:**
+**Access method:**
 
-- Portal público de dados da Prefeitura do Rio.
-- A forma exata de acesso varia por dataset.
-- Priorizar downloads estruturados, APIs ou serviços geográficos quando publicados pelo próprio portal.
-- Validar dataset por dataset antes de automatizar.
-- Raspagem só deve ser considerada se não houver download/API oficial e se os termos permitirem.
+- DATA.RIO portal.
+- ArcGIS REST/FeatureServer services for some datasets.
+- File downloads for others.
+- Validate each dataset individually before integration.
 
-**Dados relevantes esperados:**
+**Relevant data:**
 
-- Limites de bairros e regiões administrativas.
-- Equipamentos públicos.
-- Unidades de saúde, escolas e serviços públicos.
-- Camadas urbanas e geográficas.
-- Eventuais bases de mobilidade e infraestrutura.
+- Neighborhood boundaries.
+- Administrative regions.
+- Urban facilities and infrastructure.
+- Geospatial layers for city context.
 
-**Uso sugerido:**
+**Suggested use:**
 
-- Converter coordenada em bairro ou região administrativa.
-- Identificar equipamentos públicos próximos a um cluster.
-- Enriquecer respostas com contexto urbano.
-- Melhorar visualização em mapa.
+- Neighborhood and administrative-region mapping.
+- Urban-context enrichment.
+- Public-impact calculations around transport, facilities, and dense areas.
 
-**Limitações:**
+**Limitations:**
 
-- Nem todo dataset terá API.
-- A documentação e os formatos podem variar entre conjuntos.
-- É necessário validar atualização, licença, formato e estabilidade dos links por dataset.
+- Dataset access patterns vary.
+- Some ArcGIS endpoints return HTTP 200 with an `error` object; validate the body,
+  not only the HTTP status.
 
-**Referências:**
+**References:**
 
-- Portal DATA.RIO: https://www.data.rio/
-
----
-
-## 7. GTFS e dados oficiais de transporte
-
-**Papel no Sinal Aberto:** estimar impacto operacional em transporte público e circulação urbana.
-
-**Por que é útil:** interrupções de transporte, desvios, atrasos e bloqueios são bons sinais de impacto público. O Fogo Cruzado já possui campos próprios sobre transporte afetado, mas feeds de transporte podem complementar a análise.
-
-**Forma de acesso:**
-
-- GTFS Schedule: arquivo ZIP com arquivos texto sobre rotas, viagens, paradas, horários e calendário.
-- GTFS Realtime: feed em Protocol Buffers com atualizações de viagem, alertas de serviço e posições de veículos.
-- Usar apenas feeds publicados oficialmente por operadores, consórcios ou autoridades públicas.
-- Evitar scraping de apps, sites ou redes sociais de operadores, salvo autorização/termos claros.
-
-**Dados relevantes:**
-
-- `routes.txt`.
-- `stops.txt`.
-- `trips.txt`.
-- `stop_times.txt`.
-- `calendar.txt`.
-- GTFS Realtime Service Alerts.
-- GTFS Realtime Trip Updates.
-- GTFS Realtime Vehicle Positions.
-
-**Uso sugerido:**
-
-- Identificar linhas, estações e paradas próximas a clusters.
-- Medir impacto potencial em deslocamento.
-- Detectar alertas de serviço causados por atividade policial, acidente, manifestação, desvio ou interrupção.
-- Cruzar cluster armado com rede de transporte afetada.
-
-**Limitações:**
-
-- Disponibilidade varia por cidade e operador.
-- GTFS Schedule é programado, não tempo real.
-- GTFS Realtime depende de publicação oficial e qualidade operacional.
-- Nem todo transporte do Rio pode ter feed aberto e documentado.
-
-**Referências:**
-
-- Visão geral GTFS: https://gtfs.org/documentation/overview/
-- GTFS Realtime Service Alerts: https://gtfs.org/documentation/realtime/feed-entities/service-alerts/
+- DATA.RIO portal: https://www.data.rio/
+- ArcGIS item/services vary by dataset.
 
 ---
 
-## 8. Imprensa, canais oficiais e redes sociais
+## 7. GTFS and Mobility Sources
 
-**Papel no Sinal Aberto:** confirmação contextual e sinais complementares, nunca fonte central de decisão.
+**Role in Sinal Aberto:** mobility context and possible transport-impact signal.
 
-**Por que pode ser útil:** comunicados oficiais, reportagens e publicações verificadas podem ajudar a confirmar contexto, extensão territorial, impactos e encerramento de eventos.
+**Why it is useful:** routes, stops, trips, alerts, and vehicle positions can
+show which corridors or services may be affected by a cluster.
 
-**Forma de acesso:**
+**Access method:**
 
-- Preferir RSS, APIs oficiais, páginas institucionais e canais públicos com termos claros.
-- Evitar scraping como fonte automática de decisão.
-- Se usado, atribuir baixo peso probabilístico e marcar como fonte complementar.
+- Official GTFS static feeds.
+- GTFS Realtime feeds when published.
+- Official APIs from operators or transport authorities.
+- Avoid unofficial scraping.
 
-**Dados relevantes:**
+**Relevant data:**
 
-- Comunicados oficiais.
-- Alertas de órgãos públicos.
-- Informações de operadores de transporte.
-- Reportagens verificadas.
-- Atualizações sobre interdições, escolas fechadas, transporte interrompido ou atendimento emergencial.
+- Routes and stops.
+- Trips and calendars.
+- Realtime alerts.
+- Vehicle positions.
+- Service interruptions.
 
-**Uso sugerido:**
+**Suggested use:**
 
-- Explicar contexto.
-- Confirmar impacto urbano.
-- Adicionar fonte textual à resposta.
-- Validar ou reduzir incerteza de clusters detectados por outras fontes.
+- Estimate public impact around affected routes/stops.
+- Detect or explain transport disruption.
+- Add mobility context to clusters.
 
-**Limitações:**
+**Limitations:**
 
-- Alto risco de ruído, duplicidade e atraso.
-- Termos de uso variam por plataforma.
-- Redes sociais podem conter boatos ou relatos não verificados.
-- Nunca deve substituir fontes estruturadas e oficiais.
+- Static GTFS is not real time.
+- Realtime feeds may have rate limits, sparse coverage, or quality issues.
+- GPS endpoints can be large and require tight time windows.
 
 ---
 
-## Priorização recomendada
+## 8. Official Channels, Journalism, and Social Media
 
-### MVP sem scraping
+**Role in Sinal Aberto:** complementary context and possible confirmation,
+never the decisive source by default.
 
-1. Fogo Cruzado via API.
-2. ISP Dados via downloads CSV/KML/Shapefile.
-3. IBGE Localidades via API.
-4. IBGE Malhas via API.
-5. SINESP/MJSP via downloads públicos.
-6. DATA.RIO apenas para datasets com download/API/serviço geográfico claro.
+**Access method:**
 
-### Armazenamento no MVP
+- RSS feeds.
+- Official APIs.
+- Public pages when terms allow use.
+- Platform APIs for social media; avoid scraping.
 
-O MVP deve começar com SQLite, mantendo o banco pequeno, auditável e reconstruível a partir das fontes externas autorizadas.
+**Suggested use:**
 
-Uso recomendado:
+- Contextual explanation.
+- Official or journalistic confirmation when available.
+- Low-weight supporting signal for clusters.
 
-- armazenar ocorrências recentes normalizadas da API do Fogo Cruzado;
-- guardar metadados de fonte, horário de consulta e horário de última atualização;
-- manter cache curto para reduzir pressão sobre a API externa;
-- salvar clusters recentes já calculados para evitar processamento repetido a cada pergunta;
-- usar índices por data, cidade, bairro, latitude e longitude;
-- filtrar por janela temporal e bounding box antes de aplicar cálculo de distância no Python.
+**Limitations:**
 
-PostgreSQL/PostGIS deve ser adotado depois se houver necessidade de histórico amplo, consultas por polígonos, interseções espaciais, múltiplas instâncias ou dashboard público com maior concorrência.
+- Posts can lag events.
+- Language can be ambiguous.
+- Platform terms and licensing must be respected.
+- Rumor control and verification are mandatory before any user-facing claim.
 
-### Fase posterior
+## Recommended Integration Order
 
-1. Feeds oficiais de transporte, se disponíveis.
-2. Comunicados oficiais e RSS de imprensa, se houver termos claros.
-3. Scraping somente como último recurso, com governança, baixo peso no modelo e validação jurídica/técnica.
-
-## Observação técnica
-
-Separar as fontes por função:
-
-- **Evidência atual:** Fogo Cruzado e, quando disponível, feeds oficiais de transporte.
-- **Histórico e priors:** ISP Dados e SINESP.
-- **Geografia:** IBGE e DATA.RIO.
-- **Contexto textual:** comunicados oficiais e imprensa verificada.
-
-Essa separação evita misturar uma fonte histórica com uma fonte de tempo quase real e reduz o risco de respostas determinísticas demais.
+1. Fogo Cruzado as the primary occurrence source.
+2. IBGE Localidades for official territorial normalization.
+3. IBGE Malhas for official geometries.
+4. ISP Dados RJ for RJ historical priors.
+5. SINESP/MJSP for national aggregate context.
+6. DATA.RIO for Rio urban layers.
+7. GTFS/static transport feeds.
+8. GPS/realtime mobility only after queueing, cache, rate limits, and deduplication exist.
+9. COR.Rio and official/news feeds as auxiliary context.

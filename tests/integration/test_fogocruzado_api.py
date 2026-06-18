@@ -50,7 +50,7 @@ class FogoCruzadoCredentials:
 
 def _payload(response: httpx.Response, expected_status: int = 200) -> dict[str, Any]:
     assert response.status_code == expected_status, (
-        f"Falha ao consultar {response.request.url.path}: "
+        f"Failed to query {response.request.url.path}: "
         f"status={response.status_code}"
     )
     payload = response.json()
@@ -59,11 +59,11 @@ def _payload(response: httpx.Response, expected_status: int = 200) -> dict[str, 
 
 
 def _assert_keys(data: dict[str, Any], keys: set[str], label: str) -> None:
-    assert keys <= set(data), f"{label} nao contem campos esperados: {keys - set(data)}"
+    assert keys <= set(data), f"{label} missing expected fields: {keys - set(data)}"
 
 
 def _assert_reference_object(value: Any, label: str) -> None:
-    assert isinstance(value, dict), f"{label} deve ser um objeto"
+    assert isinstance(value, dict), f"{label} must be an object"
     _assert_keys(value, {"id", "name"}, label)
 
 
@@ -111,8 +111,8 @@ def fogocruzado_credentials() -> FogoCruzadoCredentials:
     password = _first_config(PASSWORD_ENV_NAMES, PASSWORD_DOTENV_ONLY_NAMES)
     if not email or not password:
         pytest.skip(
-            "Credenciais do Fogo Cruzado ausentes. Defina "
-            "FOGOCRUZADO_EMAIL e FOGOCRUZADO_PASSWORD no .env."
+            "Missing Fogo Cruzado credentials. Define "
+            "FOGOCRUZADO_EMAIL and FOGOCRUZADO_PASSWORD in .env."
         )
     return FogoCruzadoCredentials(email=email, password=password)
 
@@ -129,12 +129,12 @@ def fogocruzado_token(fogocruzado_credentials: FogoCruzadoCredentials) -> str:
         )
 
     assert response.status_code == 201, (
-        "Falha no login do Fogo Cruzado: "
+        "Fogo Cruzado login failed: "
         f"status={response.status_code}"
     )
     payload = _payload(response, expected_status=201)
     token = payload.get("data", {}).get("accessToken")
-    assert token, "Login do Fogo Cruzado nao retornou data.accessToken"
+    assert token, "Fogo Cruzado login did not return data.accessToken"
     return token
 
 
@@ -150,7 +150,7 @@ def states(authenticated_client: httpx.Client) -> list[dict[str, Any]]:
     response = authenticated_client.get("/states")
     payload = _payload(response)
     states = payload.get("data", [])
-    assert states, "/states retornou lista vazia"
+    assert states, "/states returned an empty list"
     return states
 
 
@@ -164,7 +164,7 @@ def cities(authenticated_client: httpx.Client) -> list[dict[str, Any]]:
     response = authenticated_client.get("/cities")
     payload = _payload(response)
     cities = payload.get("data", [])
-    assert cities, "/cities retornou lista vazia"
+    assert cities, "/cities returned an empty list"
     return cities
 
 
@@ -191,7 +191,7 @@ def first_occurrence(
 ) -> dict[str, Any]:
     payload = occurrence_page[1]
     occurrences = payload.get("data", [])
-    assert occurrences, "/occurrences retornou lista vazia"
+    assert occurrences, "/occurrences returned an empty list"
     return occurrences[0]
 
 
@@ -257,7 +257,7 @@ def test_cities_filter_by_city_id(
     payload = _payload(response)
     data = payload.get("data", [])
 
-    assert data, "/cities?cityId retornou lista vazia"
+    assert data, "/cities?cityId returned an empty list"
     assert all(city["id"] == city_id for city in data)
 
 
@@ -271,7 +271,7 @@ def test_cities_filter_by_city_name(
     payload = _payload(response)
     data = payload.get("data", [])
 
-    assert data, "/cities?cityName retornou lista vazia"
+    assert data, "/cities?cityName returned an empty list"
     assert any(city["name"].casefold() == city_name.casefold() for city in data)
 
 
@@ -285,7 +285,7 @@ def test_cities_filter_by_state_id(
     payload = _payload(response)
     data = payload.get("data", [])
 
-    assert data, "/cities?stateId retornou lista vazia"
+    assert data, "/cities?stateId returned an empty list"
     assert all(city["state"]["id"] == state_id for city in data)
 
 
@@ -299,7 +299,7 @@ def test_occurrences_endpoint_contract(
     assert isinstance(payload.get("pageMeta"), dict)
     _assert_page_meta(payload["pageMeta"], page=1, take=2)
     assert isinstance(payload.get("data"), list)
-    assert payload["data"], "/occurrences retornou lista vazia"
+    assert payload["data"], "/occurrences returned an empty list"
     first_occurrence = payload["data"][0]
     _assert_keys(
         first_occurrence,
@@ -451,7 +451,7 @@ def test_occurrences_filter_by_date_range(
     )
     payload = _payload(response)
     assert isinstance(payload.get("data"), list)
-    assert payload["data"], "/occurrences com filtro de data retornou lista vazia"
+    assert payload["data"], "/occurrences with date filter returned an empty list"
     for occurrence in payload["data"]:
         found_date = _parse_api_date(occurrence["date"])
         assert initial_date <= found_date <= final_date
@@ -484,7 +484,7 @@ def test_occurrences_filter_by_multiple_cities(
                 break
 
     if len(city_ids) < 2:
-        pytest.skip("Nao ha ocorrencias recentes em duas cidades diferentes.")
+        pytest.skip("There are no recent occurrences in two different cities.")
 
     selected_city_ids = set(city_ids[:2])
     params = [
@@ -499,7 +499,7 @@ def test_occurrences_filter_by_multiple_cities(
     filtered_payload = _payload(response)
 
     assert filtered_payload["data"], (
-        "/occurrences com multiplos idCities retornou lista vazia"
+        "/occurrences with multiple idCities returned an empty list"
     )
     assert {
         occurrence["city"]["id"] for occurrence in filtered_payload["data"]
@@ -526,5 +526,5 @@ def test_occurrences_filter_by_type_occurrence(
     payload = _payload(response)
 
     assert isinstance(payload.get("data"), list)
-    assert payload["data"], "/occurrences?typeOccurrence=withVictim retornou vazio"
+    assert payload["data"], "/occurrences?typeOccurrence=withVictim returned empty"
     assert all(occurrence["victims"] for occurrence in payload["data"])

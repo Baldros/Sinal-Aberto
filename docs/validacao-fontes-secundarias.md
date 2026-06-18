@@ -1,39 +1,84 @@
-# Validacao de fontes secundarias
+# Secondary Source Validation
 
-Validado em: 2026-06-12, America/Sao_Paulo.
+Validated on: 2026-06-12, America/Sao_Paulo.
+Revalidated on: 2026-06-17, America/Sao_Paulo, now through automated connection
+tests in `tests/integration/` with one file per auxiliary source.
 
-Escopo: fontes secundarias citadas em `docs/fontes-de-dados.md`. A API do Fogo Cruzado fica fora deste levantamento porque ja foi validada como fonte principal.
+Scope: secondary sources listed in `docs/fontes-de-dados.md`. The Fogo Cruzado
+API is outside this survey because it has already been validated as the primary
+source.
 
-## Resumo executivo
+## Revalidation 2026-06-17
 
-| Fonte | Status | Melhor forma de uso | Papel no app |
-| --- | --- | --- | --- |
-| ISP Dados RJ | Usavel | CKAN do Dados Abertos RJ para descoberta + downloads CSV/SHP/KML do ISP | Historico RJ, CISP/AISP/RISP, estatisticas agregadas |
-| SINESP/MJSP | Usavel | CKAN do MJSP + download XLSX/ZIP | Historico nacional, comparacao e priors agregados |
-| IBGE Localidades | Usavel | API REST JSON | Normalizacao de municipios, UFs, codigos oficiais |
-| IBGE Malhas | Usavel | API REST GeoJSON/TopoJSON/SVG | Geometrias oficiais para mapas e joins espaciais |
-| DATA.RIO geosservicos | Usavel por dataset | ArcGIS REST/FeatureServer quando existir | Bairros, regioes administrativas e camadas urbanas |
-| GTFS Rio | Usavel | ZIP publico do ArcGIS/DATA.RIO | Linhas, paradas e servicos de onibus/BRT |
-| GPS SPPO | Usavel com cuidado | Endpoint publico filtrado por janela curta | Contexto operacional de mobilidade, nao sinal direto de seguranca |
-| COR.Rio / RSS oficiais | Usavel com baixo peso | WordPress REST/RSS | Contexto auxiliar e eventos oficiais |
-| ISP Conecta / dashboards | Nao recomendado para ingestao direta | Usar datasets de base em vez de dashboards | Visualizacao humana, nao fonte primaria de dados |
-| `api.dados.rio` | Nao depender agora | Validar novamente antes de usar | Indisponivel no teste, retornando 503 |
+The tests in `tests/integration/` rerun this validation. Seven of the eight
+sources responded as they did on 2026-06-12. The only observed change:
+
+- **COR.Rio now requires browser-like headers.** The site returns `HTTP 403` to
+  clients that do not look like browsers. It sits behind a WAF (`server: hcdn`).
+  Changing only `User-Agent` is not enough; `Accept`, `Accept-Language`, and
+  `Upgrade-Insecure-Requests` are also needed. With those headers, both
+  WordPress REST and RSS return `HTTP 200`.
+
+## Executive Summary
+
+| Source | Status | Best use | Role in the app |
+|---|---|---|---|
+| ISP Dados RJ | Usable | Open Data RJ CKAN discovery + ISP CSV/SHP/KML downloads | RJ history, CISP/AISP/RISP, aggregate statistics |
+| SINESP/MJSP | Usable | MJSP CKAN + XLSX/ZIP downloads | National history, comparison, aggregate priors |
+| IBGE Localidades | Usable | REST JSON API | Municipality/state normalization and official codes |
+| IBGE Malhas | Usable | REST GeoJSON/TopoJSON/SVG API | Official geometries for maps and spatial joins |
+| DATA.RIO geoservices | Usable per dataset | ArcGIS REST/FeatureServer when available | Neighborhoods, administrative regions, urban layers |
+| GTFS Rio | Usable | Public ArcGIS/DATA.RIO ZIP | Bus/BRT routes, stops, and services |
+| GPS SPPO | Usable with care | Public endpoint filtered by short window | Operational mobility context, not a direct safety signal |
+| COR.Rio / official RSS | Usable with low weight; requires browser headers | WordPress REST/RSS | Auxiliary context and official events |
+| ISP Conecta / dashboards | Not recommended for direct ingestion | Use source datasets instead of dashboards | Human visualization, not a primary data source |
+| `api.dados.rio` | Do not depend on it now | Revalidate before use | Unavailable in test, returning 503 |
+
+## Response Formats and Normalization Points
+
+| Source | Access method | Body format | Observed Content-Type | Normalization points |
+|---|---|---|---|---|
+| IBGE Localidades | REST | JSON list of objects | `application/json` | Use integer `id` as key; nested hierarchy municipality > micro-region > meso-region > state; do not use free-text name as primary key. |
+| IBGE Malhas | REST | GeoJSON `FeatureCollection` | `application/vnd.geo+json` | Ready for GIS; use `GET` only because HEAD returns 405; cache by state/quality. |
+| ISP Dados RJ | CKAN + download | Metadata JSON; data CSV; SHP/KML in `.rar` | CKAN `application/json`; CSV `text/csv` or `application/octet-stream` | Confirm CSV encoding and separator; Brazilian date/decimal formats; version by `resource.id`/hash. |
+| SINESP/MJSP | CKAN + download | Metadata JSON; ZIP with XLSX/CSV; PDF dictionaries | CKAN `application/json`; download `application/zip` | Unpack in async/offline job; read dictionary before mapping columns; `metadata_modified` is ISO 8601. |
+| DATA.RIO (ArcGIS) | ArcGIS REST | JSON or GeoJSON (`f=json` / `f=geojson`) | `text/plain` or `application/json` | Logical errors arrive as `HTTP 200` plus `error`; status is not enough; field names vary by layer. |
+| GTFS Rio | ArcGIS item | Metadata JSON; ZIP with GTFS CSV collection | JSON; download `application/zip` | ZIP contains several CSV files (`routes`, `stops`, `trips`, `stop_times`, `calendar`); ingest per table. |
+| GPS SPPO | REST with window | JSON list of objects | `text/html` while body is JSON | Do not choose parser by Content-Type; lat/long as decimal-comma strings; timestamps in epoch ms; short window required; deduplicate by `ordem` + `datahora`. |
+| COR.Rio | WordPress REST / RSS | WP REST JSON; RSS XML | `application/json`; `application/rss+xml` | Requires browser headers; treat as low-weight context. |
+
+## Headers and Access Control
+
+- **COR.Rio requires browser-like headers.** Without browser `User-Agent`,
+  `Accept`, `Accept-Language`, and `Upgrade-Insecure-Requests`, the WAF returns
+  `HTTP 403`. The ingestion client must send these headers on every `cor.rio`
+  request.
+- **GPS SPPO lies in Content-Type.** The header is `text/html`, but the body is
+  JSON. Parse the body as JSON directly.
+- **IBGE Malhas does not accept HEAD.** It returns `405`; use `GET` for checks
+  and downloads.
+- **ArcGIS signals errors with HTTP 200.** DATA.RIO and the GTFS item can return
+  `200` even on logical failure, with `{"error": {...}}` in the body. Validate
+  absence of `error`, not only status.
+- License/attribution remains as in 2026-06-12: record source and terms before
+  redistributing complete datasets.
 
 ## ISP Dados RJ
 
-Da para usar. A melhor integracao e descobrir recursos pelo CKAN do Dados Abertos RJ e baixar os arquivos oficiais hospedados em `www.ispdados.rj.gov.br`.
+Usable. The best integration is to discover resources through Open Data RJ CKAN
+and download official files hosted at `www.ispdados.rj.gov.br`.
 
-Endpoints de metadados validados:
+Validated metadata endpoints:
 
 - `https://dadosabertos.rj.gov.br/api/3/action/package_show?id=isp-estatisticas-de-seguranca-publica`
 - `https://dadosabertos.rj.gov.br/api/3/action/package_show?id=isp-divisao-territorial`
 
-Arquivos testados com `HTTP 200`:
+Files tested with `HTTP 200`:
 
 - `https://www.ispdados.rj.gov.br/Arquivos/BaseDPEvolucaoMensalCisp.csv`
 - `https://www.ispdados.rj.gov.br/Arquivos/CISPshp.rar`
 
-Outros recursos relevantes encontrados:
+Other relevant resources found:
 
 - `BaseMunicipioMensal.csv`
 - `Relacao_RISPxAISPxCISP.csv`
@@ -41,213 +86,232 @@ Outros recursos relevantes encontrados:
 - `CorrespondenciaCispMunicipioCodAoLongoDoTempo.csv`
 - `RegioesKML.rar`, `RegioesSHP.rar`, `AISPkml.rar`, `AISPshp.rar`, `CISPkml.rar`, `CISPshp.rar`
 
-Uso recomendado:
+Recommended use:
 
-- baixar CSVs periodicamente;
-- manter cache/versionamento por `resource.id`, `last_modified`, tamanho e hash;
-- usar as tabelas territoriais para converter CISP/AISP/RISP em municipio/bairro quando possivel;
-- tratar como dado historico/agregado, nao tempo real.
+- download CSVs periodically;
+- keep cache/versioning by `resource.id`, `last_modified`, size, and hash;
+- use territorial tables to convert CISP/AISP/RISP into municipality/neighborhood when possible;
+- treat as historical/aggregate data, not real time.
 
-Observacao: no CKAN do RJ a licenca apareceu como nao especificada em alguns pacotes, apesar dos recursos estarem publicos. Para produto publico, registrar atribuicao e revisar termos antes de redistribuir bases completas.
+Note: in RJ CKAN, some package licenses appeared unspecified although resources
+were public. For a public product, record attribution and review terms before
+redistributing complete datasets.
 
 ## SINESP/MJSP
 
-Da para usar. O pacote oficial esta no CKAN do Ministerio da Justica.
+Usable. The official package is in the Ministry of Justice CKAN.
 
-Endpoint validado:
+Validated endpoint:
 
 - `https://dados.mj.gov.br/api/3/action/package_show?id=sistema-nacional-de-estatisticas-de-seguranca-publica`
 
-Resultado validado:
+Validated result:
 
 - `success: true`
-- licenca: Creative Commons Atribuicao
+- license: Creative Commons Attribution
 - `metadata_modified: 2026-04-30T18:21:15.960122`
-- pacote com recursos XLSX, ZIP e dicionarios PDF
+- package with XLSX, ZIP, and PDF dictionary resources
 
-Recurso mais relevante:
+Most relevant resource:
 
 - `Base de Dados VDE`, ZIP: `https://dados.mj.gov.br/dataset/210b9ae2-21fc-4986-89c6-2006eb4db247/resource/e9d6cc2b-33f1-468d-ab09-9aa8303c2eba/download/basededadosvde.zip`
 
-O download do ZIP retornou `HTTP 200`, `application/zip`, com aproximadamente 35,8 MB.
+The ZIP returned `HTTP 200`, `application/zip`, at about 35.8 MB.
 
-Uso recomendado:
+Recommended use:
 
-- usar como historico nacional/agregado;
-- ingerir por rotina assincrona, nao em request de usuario;
-- manter dicionarios de dados junto da ingestao;
-- comparar com ISP/Fogo Cruzado apenas como camada contextual, porque granularidade e metodologia podem divergir.
+- use as aggregate national history;
+- ingest through an async/offline routine, not during user requests;
+- keep data dictionaries alongside ingestion;
+- compare with ISP/Fogo Cruzado only as context because granularity and
+  methodology can differ.
 
 ## IBGE Localidades
 
-Da para usar diretamente por API REST JSON.
+Usable directly through REST JSON API.
 
-Endpoint testado:
+Tested endpoint:
 
 - `https://servicodados.ibge.gov.br/api/v1/localidades/estados/RJ/municipios`
 
-Resultado validado:
+Validated result:
 
-- retorno JSON com 92 municipios do RJ;
-- campos oficiais como `id`, `nome`, microrregiao, mesorregiao, regiao imediata/intermediaria, UF e regiao.
+- JSON return with 92 RJ municipalities;
+- official fields such as `id`, `nome`, `microrregiao`, `mesorregiao`,
+  immediate/intermediate region, state, and region.
 
-Uso recomendado:
+Recommended use:
 
-- normalizar codigos de municipio e UF;
-- evitar nomes livres como chave primaria;
-- manter cache local porque a base e estavel.
+- normalize municipality and state codes;
+- avoid free-text names as primary keys;
+- keep local cache because the base is stable.
 
 ## IBGE Malhas
 
-Da para usar diretamente por API. O metodo `HEAD` retornou `405`, mas `GET` funcionou.
+Usable directly by API. `HEAD` returned `405`, but `GET` worked.
 
-Endpoint testado:
+Tested endpoint:
 
 - `https://servicodados.ibge.gov.br/api/v3/malhas/estados/33?formato=application/vnd.geo+json&qualidade=minima`
 
-Resultado validado:
+Validated result:
 
 - `HTTP 200`
 - `Content-Type: application/vnd.geo+json`
 
-Uso recomendado:
+Recommended use:
 
-- baixar e cachear geometrias oficiais;
-- usar `qualidade=minima` para previews e filtros rapidos;
-- usar qualidade maior apenas em renderizacao/mapas que precisem de detalhe;
-- preferir GeoJSON para pipeline web e GIS comum.
+- download and cache official geometries;
+- use `qualidade=minima` for previews and fast filters;
+- use higher quality only for rendering/maps that need detail;
+- prefer GeoJSON for web and common GIS pipelines.
 
-## DATA.RIO e geosservicos municipais
+## DATA.RIO and Municipal Geoservices
 
-Da para usar, mas por dataset. Nao vale depender genericamente de `api.dados.rio` neste momento: os testes em `https://api.dados.rio/`, `/docs`, `/openapi.json` e `/v2` retornaram `503 Service Temporarily Unavailable`.
+Usable per dataset. Do not generically depend on `api.dados.rio` now: tests at
+`https://api.dados.rio/`, `/docs`, `/openapi.json`, and `/v2` returned
+`503 Service Temporarily Unavailable`.
 
-O caminho mais confiavel validado foi ArcGIS REST/FeatureServer.
+The most reliable validated path was ArcGIS REST/FeatureServer.
 
-Camada validada:
+Validated layer:
 
 - `https://pgeo3.rio.rj.gov.br/arcgis/rest/services/Cartografia/Limites_administrativos/FeatureServer/4?f=json`
 
-Resultado validado:
+Validated result:
 
-- camada: `Limite de Bairros`
-- geometria: poligonos
-- capacidades: `Query,Extract`
-- formatos suportados: JSON, GeoJSON, PBF
-- campo de bairro: `codbairro`
+- layer: `Limite de Bairros`
+- geometry: polygons
+- capabilities: `Query,Extract`
+- supported formats: JSON, GeoJSON, PBF
+- neighborhood field: `codbairro`
 
-Query JSON validada:
+Validated JSON query:
 
 - `https://pgeo3.rio.rj.gov.br/arcgis/rest/services/Cartografia/Limites_administrativos/FeatureServer/4/query?where=1%3D1&outFields=*&returnGeometry=false&resultRecordCount=3&f=json`
 
-Query GeoJSON validada:
+Validated GeoJSON query:
 
 - `https://pgeo3.rio.rj.gov.br/arcgis/rest/services/Cartografia/Limites_administrativos/FeatureServer/4/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&resultRecordCount=1&f=geojson`
 
-Uso recomendado:
+Recommended use:
 
-- usar para bairros, regioes administrativas e camadas urbanas oficiais;
-- sempre ler metadados da layer antes de escrever queries, porque nomes de campos variam;
-- cachear geometrias e metadados;
-- nao assumir que todo dataset DATA.RIO tem API propria.
+- use for neighborhoods, administrative regions, and official urban layers;
+- always read layer metadata before writing queries because field names vary;
+- cache geometries and metadata;
+- do not assume every DATA.RIO dataset has its own API.
 
 ## GTFS Rio
 
-Da para usar. O dataset oficial foi encontrado como item publico ArcGIS/DATA.RIO.
+Usable. The official dataset was found as a public ArcGIS/DATA.RIO item.
 
-Metadados validados:
+Validated metadata:
 
 - `https://www.arcgis.com/sharing/rest/content/items/8ffe62ad3b2f42e49814bf941654ea6c?f=json`
 
-Download validado:
+Validated download:
 
 - `https://www.arcgis.com/sharing/rest/content/items/8ffe62ad3b2f42e49814bf941654ea6c/data`
 
-Resultado validado:
+Validated result:
 
-- titulo: `GTFS do Rio de Janeiro`
-- tipo: `CSV Collection`
-- acesso: publico
-- licenca: Creative Commons Attribution 4.0
-- descricao: GTFS de linhas de onibus e BRT, atualizado mensalmente pela SMTR
-- download: `HTTP 200`, ZIP com aproximadamente 25,3 MB
+- title: `GTFS do Rio de Janeiro`
+- type: `CSV Collection`
+- access: public
+- license: Creative Commons Attribution 4.0
+- description: GTFS for bus and BRT lines, updated monthly by SMTR
+- download: `HTTP 200`, ZIP of about 25.3 MB
 
-Uso recomendado:
+Recommended use:
 
-- ingerir rotas, paradas, viagens e calendarios;
-- versionar por tamanho/hash/data de coleta;
-- usar para contexto de mobilidade e impacto urbano perto de ocorrencias.
+- ingest routes, stops, trips, and calendars;
+- version by size/hash/collection date;
+- use for mobility and urban-impact context near occurrences.
 
 ## GPS SPPO
 
-Da para usar com cuidado. O endpoint publico responde, mas a resposta sem filtro e muito grande.
+Usable with care. The public endpoint responds, but the unfiltered response is
+very large.
 
 Endpoint:
 
 - `https://dados.mobilidade.rio/gps/sppo`
 
-Query filtrada validada:
+Validated filtered query:
 
 - `https://dados.mobilidade.rio/gps/sppo?dataInicial=2026-06-12T16:00:00&dataFinal=2026-06-12T16:05:00`
 
-Resultado validado:
+Validated result:
 
 - `HTTP 200`
-- headers de limite: 5 requisicoes por segundo e 60 por minuto;
-- resposta sem filtro testada com mais de 90 MB;
-- `Content-Type` veio como `text/html`, mas o corpo e JSON;
-- campos encontrados: `ordem`, `latitude`, `longitude`, `datahora`, `velocidade`, `linha`, `datahoraenvio`, `datahoraservidor`;
-- latitude/longitude vieram como strings com virgula decimal;
-- timestamps vieram em epoch milliseconds.
+- rate-limit headers: 5 requests per second and 60 per minute
+- unfiltered response tested above 90 MB
+- `Content-Type` was `text/html`, but the body was JSON
+- fields found: `ordem`, `latitude`, `longitude`, `datahora`, `velocidade`,
+  `linha`, `datahoraenvio`, `datahoraservidor`
+- latitude/longitude arrived as strings with decimal comma
+- timestamps arrived in epoch milliseconds
 
-Uso recomendado:
+Recommended use:
 
-- nunca chamar sem janela temporal;
-- limitar janelas a poucos minutos;
-- deduplicar por `ordem` + `datahora`;
-- normalizar coordenadas e timestamps na ingestao;
-- usar apenas como contexto operacional de mobilidade.
+- never call without a time window;
+- limit windows to a few minutes;
+- deduplicate by `ordem` + `datahora`;
+- normalize coordinates and timestamps during ingestion;
+- use only as operational mobility context.
 
-## Canais oficiais, noticias e redes sociais
+## Official Channels, News, and Social Media
 
-Da para usar parcialmente, com peso baixo. O COR.Rio expõe WordPress REST e RSS.
-
-Endpoints validados:
+Validated COR.Rio endpoints:
 
 - `https://cor.rio/wp-json/wp/v2/posts?per_page=3`
 - `https://cor.rio/feed/`
 
-Resultado validado:
+Initial result:
 
-- WordPress REST retornou `HTTP 200`, JSON;
-- RSS retornou `HTTP 200`, XML.
+- WordPress REST returned `HTTP 200`, JSON;
+- RSS returned `HTTP 200`, XML.
 
-Limites:
+Revalidation 2026-06-17:
 
-- API WordPress da Prefeitura do Rio testada com busca retornou `401`;
-- redes sociais como X/Instagram devem ser usadas via APIs oficiais e termos das plataformas, nao scraping;
-- conteudo jornalistico/oficial deve entrar como contexto auxiliar, nao fonte decisiva de ocorrencia.
+- without browser-like headers, both endpoints started returning `HTTP 403`
+  (WAF, `server: hcdn`);
+- with browser `User-Agent`, `Accept`, `Accept-Language`, and
+  `Upgrade-Insecure-Requests`, both returned `HTTP 200`: WP REST as JSON and RSS
+  as `application/rss+xml`;
+- practical consequence: the COR.Rio ingestion client must send browser-like
+  headers.
 
-## Ordem recomendada de implementacao
+Additional notes:
 
-1. IBGE Localidades para normalizacao territorial.
-2. IBGE Malhas para geometrias oficiais.
-3. ISP Dados RJ via CKAN + CSV/SHP/KML.
-4. SINESP/MJSP via CKAN + ZIP/XLSX.
-5. DATA.RIO ArcGIS para bairros e regioes administrativas.
-6. GTFS estatico do Rio.
-7. GPS SPPO apenas depois de ter fila, cache, rate limit e deduplicacao.
-8. COR.Rio RSS/WordPress como contexto auxiliar.
+- Rio City Hall WordPress API tested with search returned `401`;
+- social networks such as X/Instagram should be used only through official APIs
+  and platform terms, not scraping;
+- journalistic/official content should be auxiliary context, not decisive
+  occurrence evidence.
 
-## Fontes que eu nao usaria como ingestao direta
+## Recommended Implementation Order
 
-- `api.dados.rio`, enquanto continuar retornando 503.
-- Dashboards do ISP Conecta/Visualizacao, porque sao interface humana; usar os datasets de origem.
-- Scraping de redes sociais ou paginas sem API/RSS/licenca clara.
-- Endpoint GPS SPPO sem filtros de data.
+1. IBGE Localidades for territorial normalization.
+2. IBGE Malhas for official geometries.
+3. ISP Dados RJ through CKAN + CSV/SHP/KML.
+4. SINESP/MJSP through CKAN + ZIP/XLSX.
+5. DATA.RIO ArcGIS for neighborhoods and administrative regions.
+6. Rio static GTFS.
+7. GPS SPPO only after queueing, cache, rate limiting, and deduplication exist.
+8. COR.Rio RSS/WordPress as auxiliary context.
 
-## Sugestao de modelagem minima
+## Sources Not Recommended for Direct Ingestion
 
-Tabela `data_sources`:
+- `api.dados.rio` while it keeps returning 503.
+- ISP Conecta/Visualizacao dashboards, because they are human interfaces; use
+  source datasets instead.
+- Social-media or page scraping without clear API/RSS/license.
+- GPS SPPO endpoint without date filters.
+
+## Minimal Modeling Suggestion
+
+`data_sources`:
 
 - `id`
 - `name`
@@ -260,7 +324,7 @@ Tabela `data_sources`:
 - `status`
 - `notes`
 
-Tabela `source_resources`:
+`data_source_resources`:
 
 - `source_id`
 - `remote_resource_id`
@@ -272,5 +336,3 @@ Tabela `source_resources`:
 - `hash`
 - `last_modified`
 - `ingested_at`
-
-Para CKAN, usar `package_show` como fonte de verdade de metadados. Para arquivos grandes, baixar em job assincrono e manter historico de hash. Para ArcGIS, salvar metadados da layer, campos e `supportedQueryFormats` antes de consultar dados.
