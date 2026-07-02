@@ -73,6 +73,35 @@ Put Fogo Cruzado credentials in a `.env` file at the repository root
 ./.venv/Scripts/python.exe -m sinal_aberto.ingest.build_isp_baseline
 ```
 
+The local MCP endpoint is `http://127.0.0.1:8000/mcp`; the health check is
+`http://127.0.0.1:8000/health`.
+
+## Public HTTPS Deployment
+
+The first deployable target is the existing Python/FastMCP server as a public
+HTTPS MCP endpoint:
+
+```text
+https://<service-host>/mcp
+```
+
+Deployment scaffolding is included:
+
+- `render.yaml` for a Render web service.
+- `Dockerfile` for Docker-compatible hosts.
+- `.env.example` for required environment variables.
+
+Required production secrets:
+
+- `FOGOCRUZADO_EMAIL`
+- `FOGOCRUZADO_PASSWORD`
+
+Hosted platforms should bind with `SINAL_ABERTO_HOST=0.0.0.0`. The app reads
+`SINAL_ABERTO_PORT`, then platform `PORT`, then defaults to `8000`.
+
+See [Technical stack and hosting](docs/stack-e-hospedagem.md) for the current
+deployment path and public-URL checklist.
+
 ## Product Vision
 
 The initial idea is to build a ChatGPT app able to answer questions such as:

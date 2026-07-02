@@ -7,7 +7,7 @@ variables.
 
 import pytest
 
-from sinal_aberto.config import _resolve
+from sinal_aberto.config import _resolve, _resolve_port
 
 ENV_NAMES = ("FOGOCRUZADO_EMAIL", "FOGO_CRUZADO_EMAIL")
 FILE_NAMES = ("user", "username")
@@ -41,3 +41,21 @@ def test_returns_none_when_nothing_found(monkeypatch: pytest.MonkeyPatch) -> Non
     for name in ENV_NAMES:
         monkeypatch.delenv(name, raising=False)
     assert _resolve(ENV_NAMES, FILE_NAMES, {}) is None
+
+
+def test_resolve_port_prefers_app_specific_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SINAL_ABERTO_PORT", "9000")
+    monkeypatch.setenv("PORT", "10000")
+    assert _resolve_port() == 9000
+
+
+def test_resolve_port_uses_platform_port(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SINAL_ABERTO_PORT", raising=False)
+    monkeypatch.setenv("PORT", "10000")
+    assert _resolve_port() == 10000
+
+
+def test_resolve_port_defaults_to_local_port(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SINAL_ABERTO_PORT", raising=False)
+    monkeypatch.delenv("PORT", raising=False)
+    assert _resolve_port() == 8000

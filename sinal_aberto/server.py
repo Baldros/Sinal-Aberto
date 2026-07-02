@@ -11,7 +11,10 @@ Local execution from the repository root:
 from __future__ import annotations
 
 from fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
 
+from . import __version__
 from .adapters.cor_rio import CorRioClient
 from .adapters.fogocruzado import FogoCruzadoClient
 from .adapters.ibge import IbgeLocalidadesClient
@@ -52,6 +55,18 @@ _client: FogoCruzadoClient | None = None
 _ibge_client: IbgeLocalidadesClient | None = None
 _cor_rio_client: CorRioClient | None = None
 _baseline_store: BaselineStore | None = None
+
+
+@mcp.custom_route("/health", methods=["GET"], include_in_schema=False)
+async def health_check(request: Request) -> Response:
+    """Lightweight HTTP health check for hosting providers."""
+    return JSONResponse(
+        {
+            "status": "ok",
+            "service": "sinal-aberto",
+            "version": __version__,
+        }
+    )
 
 
 def _get_client() -> FogoCruzadoClient:
@@ -183,7 +198,7 @@ async def list_data_sources() -> DataSourcesResult:
 
 def main() -> None:
     settings = get_settings()
-    mcp.run(transport="http", host=settings.host, port=settings.port)
+    mcp.run(transport="streamable-http", host=settings.host, port=settings.port)
 
 
 if __name__ == "__main__":
