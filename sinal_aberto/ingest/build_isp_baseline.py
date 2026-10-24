@@ -1,6 +1,6 @@
-"""Offline job: build the ISP baseline prepared file.
+"""Network batch job: build the ISP baseline prepared file.
 
-Run manually or on a schedule (never on a user request):
+Run manually or on a schedule:
 
     ./.venv/Scripts/python.exe -m sinal_aberto.ingest.build_isp_baseline
 
@@ -13,6 +13,8 @@ JSON file the server reads read-only.
 from __future__ import annotations
 
 import json
+import math
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +37,7 @@ ISP_CSV_URL = "https://www.ispdados.rj.gov.br/Arquivos/BaseDPEvolucaoMensalCisp.
 IBGE_RJ_MUNI_URL = "https://servicodados.ibge.gov.br/api/v1/localidades/estados/RJ/municipios"
 SIDRA_POP_URL = "https://apisidra.ibge.gov.br/values/t/6579/n6/all/v/9324/p/last"
 OUTPUT_PATH = Path(__file__).resolve().parent.parent / "data" / "isp_baseline.json"
+MIN_MUNICIPALITIES = 91
 
 # ISP spelling vs IBGE spelling (compared as slugs).
 _ALIASES: dict[str, str] = {
@@ -181,10 +184,57 @@ def build(client: httpx.Client) -> dict[str, Any]:
     }
 
 
+def validate_baseline(data: dict[str, Any], existing: dict[str, Any] | None = None) -> bool:
+    """Reject partial or older data before replacing the versioned baseline.
+
+    Return False when the source has not published a newer month.
+    """
+    period = data.get("meta", {}).get("as_of")
+    try:
+        parsed_period = datetime.strptime(period, "%Y-%m")
+        if parsed_period.strftime("%Y-%m") != period:
+            raise ValueError
+    except (TypeError, ValueError) as exc:
+        raise ValueError("ISP baseline has an invalid as_of period") from exc
+
+    old_municipalities = (existing or {}).get("municipalities", {})
+    old_period = (existing or {}).get("meta", {}).get("as_of")
+    if old_period and period <= old_period:
+        return False
+
+    municipalities = data.get("municipalities")
+    if not isinstance(municipalities, dict) or len(municipalities) < max(
+        MIN_MUNICIPALITIES, len(old_municipalities)
+    ):
+        raise ValueError("ISP baseline has incomplete municipality coverage")
+    if set(old_municipalities) - set(municipalities):
+        raise ValueError("ISP baseline lost previously covered municipalities")
+
+    for code, entry in municipalities.items():
+        if not isinstance(entry, dict) or not isinstance(code, str) or not code.startswith("33"):
+            raise ValueError(f"ISP baseline has an invalid municipality: {code}")
+        population = entry.get("population")
+        if not isinstance(population, int) or population <= 0:
+            raise ValueError(f"ISP baseline has invalid population for {code}")
+        for indicator_name in ("police_lethality", "violent_lethality"):
+            indicator = entry.get(indicator_name)
+            if not isinstance(indicator, dict):
+                raise ValueError(f"ISP baseline is missing {indicator_name} for {code}")
+            for field in ("typical_monthly", "recent_monthly", "per_100k_annual"):
+                value = indicator.get(field)
+                if not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+                    raise ValueError(f"ISP baseline has invalid {indicator_name}.{field} for {code}")
+    return True
+
+
 def main() -> None:
     headers = {"User-Agent": "SinalAberto-Ingest/1.0 (+https://github.com/Sinal-Aberto)"}
     with httpx.Client(timeout=120.0, follow_redirects=True, headers=headers) as client:
         data = build(client)
+    existing = json.loads(OUTPUT_PATH.read_text(encoding="utf-8")) if OUTPUT_PATH.exists() else None
+    if not validate_baseline(data, existing):
+        print(f"ISP baseline is already current (as_of {data['meta']['as_of']}); kept {OUTPUT_PATH}.")
+        return
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
     count = len(data["municipalities"])

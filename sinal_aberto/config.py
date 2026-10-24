@@ -11,13 +11,15 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
+from pathlib import Path
 
-from dotenv import dotenv_values, find_dotenv
+from dotenv import dotenv_values
 from pydantic import BaseModel
 
 DEFAULT_BASE_URL = "https://api-service.fogocruzado.org.br/api/v2"
 DEFAULT_IBGE_BASE_URL = "https://servicodados.ibge.gov.br/api/v1/localidades"
 DEFAULT_COR_RIO_BASE_URL = "https://cor.rio"
+_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 
 # Specific names are safe to read from os.environ because they belong to this app.
 _EMAIL_ENV_NAMES = (
@@ -71,7 +73,7 @@ def _resolve_port() -> int:
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     """Build the process-wide settings object once and reuse it across tool calls."""
-    file_values = dotenv_values(find_dotenv(usecwd=True))
+    file_values = dotenv_values(_ENV_PATH)
 
     email = _resolve(_EMAIL_ENV_NAMES, _EMAIL_FILE_NAMES, file_values)
     password = _resolve(_PASSWORD_ENV_NAMES, _PASSWORD_FILE_NAMES, file_values)
