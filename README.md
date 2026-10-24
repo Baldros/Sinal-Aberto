@@ -59,19 +59,38 @@ confidence of the live signal. The full data design and tiered plan live in
 
 ## Running Locally
 
-Put Fogo Cruzado credentials in a `.env` file at the repository root
-(`FOGOCRUZADO_EMAIL` / `FOGOCRUZADO_PASSWORD`, or generic `user` / `password`).
+Use Python 3.13 on Windows and run these commands in PowerShell from the
+repository root. The first command uses this machine's Python installation;
+create the virtual environment in this checkout instead of copying one from
+another directory.
 
-```bash
+```powershell
+& "$env:LOCALAPPDATA\Python\pythoncore-3.13-64\python.exe" -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip check
+
 # Run the MCP server (Streamable HTTP)
-./.venv/Scripts/python.exe -m sinal_aberto.server
+.\.venv\Scripts\python.exe -m sinal_aberto.server
 
 # Offline unit tests (no network)
-./.venv/Scripts/python.exe -m pytest tests/unit -q
+.\.venv\Scripts\python.exe -m pytest tests/unit -q
 
-# Rebuild the ISP baseline data (offline job, ~monthly)
-./.venv/Scripts/python.exe -m sinal_aberto.ingest.build_isp_baseline
+# Refresh the ISP baseline from official online sources (roughly monthly)
+.\.venv\Scripts\python.exe -m sinal_aberto.ingest.build_isp_baseline
 ```
+
+Put Fogo Cruzado credentials in a `.env` file at the repository root
+(`FOGOCRUZADO_EMAIL` / `FOGOCRUZADO_PASSWORD`, or generic `user` / `password`).
+The server reads that file from the repository root even when launched from
+another working directory. Keep it outside Git.
+
+On this Windows machine, `E:\Bancos\Sinal-Aberto` is the home for any local
+Sinal Aberto data not versioned in Git: SQLite files, downloaded raw data,
+working JSON, and future database artifacts. Create subdirectories there as
+each type of data is introduced. The current server has no runtime database;
+its small prepared ISP baseline remains versioned at
+`sinal_aberto/data/isp_baseline.json`. Refreshing that baseline does not retain
+unversioned source files in the checkout.
 
 The local MCP endpoint is `http://127.0.0.1:8000/mcp`; the health check is
 `http://127.0.0.1:8000/health`.
