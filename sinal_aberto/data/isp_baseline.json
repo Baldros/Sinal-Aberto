@@ -1,346 +1,346 @@
 {
  "meta": {
   "source": "ISP Dados RJ",
-  "as_of": "2026-05",
-  "typical_window": "12 months ending 2026-05",
-  "recent_window": "6 months ending 2026-05"
+  "as_of": "2026-09",
+  "typical_window": "12 months ending 2026-09",
+  "recent_window": "6 months ending 2026-09"
  },
  "municipalities": {
   "3304557": {
    "name": "Rio de Janeiro",
-   "population": 6730729,
+   "population": 6731133,
    "police_lethality": {
-    "typical_monthly": 37.833,
-    "recent_monthly": 33.0,
-    "per_100k_annual": 6.75,
-    "percentile": 0.956
+    "typical_monthly": 38.333,
+    "recent_monthly": 25.667,
+    "per_100k_annual": 6.83,
+    "percentile": 0.967
    },
    "violent_lethality": {
-    "typical_monthly": 128.083,
-    "recent_monthly": 126.5,
-    "per_100k_annual": 22.84,
-    "percentile": 0.6264
+    "typical_monthly": 129.167,
+    "recent_monthly": 112.667,
+    "per_100k_annual": 23.03,
+    "percentile": 0.7143
    },
-   "relative_level": "typical"
+   "relative_level": "below"
   },
   "3305554": {
    "name": "Seropédica",
-   "population": 84794,
+   "population": 84821,
    "police_lethality": {
-    "typical_monthly": 0.0,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "typical_monthly": 0.083,
+    "recent_monthly": 0.167,
+    "per_100k_annual": 1.18,
+    "percentile": 0.6923
    },
    "violent_lethality": {
-    "typical_monthly": 1.333,
-    "recent_monthly": 1.667,
-    "per_100k_annual": 18.87,
-    "percentile": 0.5275
+    "typical_monthly": 1.583,
+    "recent_monthly": 1.5,
+    "per_100k_annual": 22.4,
+    "percentile": 0.6813
    },
-   "relative_level": "typical"
+   "relative_level": "above"
   },
   "3302007": {
    "name": "Itaguaí",
-   "population": 124021,
+   "population": 124040,
    "police_lethality": {
-    "typical_monthly": 0.417,
-    "recent_monthly": 0.5,
-    "per_100k_annual": 4.03,
-    "percentile": 0.8681
+    "typical_monthly": 0.583,
+    "recent_monthly": 0.667,
+    "per_100k_annual": 5.64,
+    "percentile": 0.9341
    },
    "violent_lethality": {
-    "typical_monthly": 2.5,
-    "recent_monthly": 2.5,
-    "per_100k_annual": 24.19,
-    "percentile": 0.6813
+    "typical_monthly": 2.667,
+    "recent_monthly": 3.5,
+    "per_100k_annual": 25.8,
+    "percentile": 0.7912
    },
    "relative_level": "typical"
   },
   "3303609": {
    "name": "Paracambi",
-   "population": 43627,
+   "population": 43451,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 1.25,
-    "recent_monthly": 1.333,
-    "per_100k_annual": 34.38,
-    "percentile": 0.8791
+    "typical_monthly": 1.083,
+    "recent_monthly": 0.833,
+    "per_100k_annual": 29.92,
+    "percentile": 0.8352
    },
    "relative_level": "typical"
   },
   "3303500": {
    "name": "Nova Iguaçu",
-   "population": 843220,
+   "population": 843367,
    "police_lethality": {
-    "typical_monthly": 1.083,
-    "recent_monthly": 0.667,
-    "per_100k_annual": 1.54,
+    "typical_monthly": 1.25,
+    "recent_monthly": 0.833,
+    "per_100k_annual": 1.78,
     "percentile": 0.7363
    },
    "violent_lethality": {
-    "typical_monthly": 16.833,
-    "recent_monthly": 14.667,
-    "per_100k_annual": 23.96,
-    "percentile": 0.6593
+    "typical_monthly": 15.333,
+    "recent_monthly": 14.0,
+    "per_100k_annual": 21.82,
+    "percentile": 0.6264
    },
    "relative_level": "below"
   },
   "3302858": {
    "name": "Mesquita",
-   "population": 178830,
+   "population": 178780,
    "police_lethality": {
-    "typical_monthly": 0.75,
-    "recent_monthly": 0.833,
-    "per_100k_annual": 5.03,
-    "percentile": 0.8901
+    "typical_monthly": 0.5,
+    "recent_monthly": 0.5,
+    "per_100k_annual": 3.36,
+    "percentile": 0.8132
    },
    "violent_lethality": {
-    "typical_monthly": 2.167,
-    "recent_monthly": 2.0,
-    "per_100k_annual": 14.54,
-    "percentile": 0.3077
+    "typical_monthly": 1.417,
+    "recent_monthly": 1.167,
+    "per_100k_annual": 9.51,
+    "percentile": 0.1538
    },
    "relative_level": "typical"
   },
   "3300456": {
    "name": "Belford Roxo",
-   "population": 518384,
+   "population": 518442,
    "police_lethality": {
     "typical_monthly": 1.583,
-    "recent_monthly": 1.833,
-    "per_100k_annual": 3.67,
-    "percentile": 0.8242
+    "recent_monthly": 1.333,
+    "per_100k_annual": 3.66,
+    "percentile": 0.8352
    },
    "violent_lethality": {
-    "typical_monthly": 11.25,
-    "recent_monthly": 13.167,
-    "per_100k_annual": 26.04,
-    "percentile": 0.7363
+    "typical_monthly": 13.917,
+    "recent_monthly": 14.167,
+    "per_100k_annual": 32.21,
+    "percentile": 0.8681
    },
    "relative_level": "typical"
   },
   "3304144": {
    "name": "Queimados",
-   "population": 149135,
+   "population": 149155,
    "police_lethality": {
-    "typical_monthly": 0.417,
-    "recent_monthly": 0.333,
-    "per_100k_annual": 3.35,
-    "percentile": 0.7912
+    "typical_monthly": 0.333,
+    "recent_monthly": 0.167,
+    "per_100k_annual": 2.68,
+    "percentile": 0.7802
    },
    "violent_lethality": {
-    "typical_monthly": 2.083,
-    "recent_monthly": 2.167,
-    "per_100k_annual": 16.76,
-    "percentile": 0.3956
+    "typical_monthly": 1.917,
+    "recent_monthly": 1.667,
+    "per_100k_annual": 15.42,
+    "percentile": 0.3297
    },
-   "relative_level": "typical"
+   "relative_level": "below"
   },
   "3302270": {
    "name": "Japeri",
-   "population": 102171,
+   "population": 102182,
    "police_lethality": {
-    "typical_monthly": 0.667,
-    "recent_monthly": 0.167,
-    "per_100k_annual": 7.83,
+    "typical_monthly": 0.583,
+    "recent_monthly": 1.0,
+    "per_100k_annual": 6.85,
     "percentile": 0.978
    },
    "violent_lethality": {
-    "typical_monthly": 3.083,
-    "recent_monthly": 3.667,
-    "per_100k_annual": 36.21,
-    "percentile": 0.8901
+    "typical_monthly": 3.75,
+    "recent_monthly": 4.833,
+    "per_100k_annual": 44.04,
+    "percentile": 0.9451
    },
-   "relative_level": "below"
+   "relative_level": "above"
   },
   "3303203": {
    "name": "Nilópolis",
-   "population": 155500,
+   "population": 155478,
    "police_lethality": {
-    "typical_monthly": 0.75,
-    "recent_monthly": 0.5,
-    "per_100k_annual": 5.79,
-    "percentile": 0.9231
+    "typical_monthly": 0.667,
+    "recent_monthly": 0.667,
+    "per_100k_annual": 5.15,
+    "percentile": 0.8901
    },
    "violent_lethality": {
-    "typical_monthly": 1.667,
-    "recent_monthly": 1.167,
-    "per_100k_annual": 12.86,
-    "percentile": 0.2747
+    "typical_monthly": 1.5,
+    "recent_monthly": 1.5,
+    "per_100k_annual": 11.58,
+    "percentile": 0.2308
    },
-   "relative_level": "below"
+   "relative_level": "typical"
   },
   "3301702": {
    "name": "Duque de Caxias",
-   "population": 866225,
+   "population": 866167,
    "police_lethality": {
-    "typical_monthly": 5.0,
-    "recent_monthly": 4.333,
-    "per_100k_annual": 6.93,
-    "percentile": 0.967
+    "typical_monthly": 5.75,
+    "recent_monthly": 5.5,
+    "per_100k_annual": 7.97,
+    "percentile": 0.989
    },
    "violent_lethality": {
-    "typical_monthly": 19.833,
-    "recent_monthly": 18.167,
-    "per_100k_annual": 27.48,
-    "percentile": 0.8022
+    "typical_monthly": 21.083,
+    "recent_monthly": 22.5,
+    "per_100k_annual": 29.21,
+    "percentile": 0.8242
    },
    "relative_level": "typical"
   },
   "3305109": {
    "name": "São João de Meriti",
-   "population": 466503,
+   "population": 466487,
    "police_lethality": {
-    "typical_monthly": 2.417,
+    "typical_monthly": 2.083,
     "recent_monthly": 2.0,
-    "per_100k_annual": 6.22,
-    "percentile": 0.9341
+    "per_100k_annual": 5.36,
+    "percentile": 0.9231
    },
    "violent_lethality": {
-    "typical_monthly": 9.833,
-    "recent_monthly": 9.333,
-    "per_100k_annual": 25.29,
+    "typical_monthly": 9.25,
+    "recent_monthly": 8.167,
+    "per_100k_annual": 23.79,
     "percentile": 0.7253
    },
    "relative_level": "typical"
   },
   "3302502": {
    "name": "Magé",
-   "population": 244142,
+   "population": 244166,
    "police_lethality": {
-    "typical_monthly": 0.333,
-    "recent_monthly": 0.167,
-    "per_100k_annual": 1.64,
-    "percentile": 0.7473
+    "typical_monthly": 0.5,
+    "recent_monthly": 0.833,
+    "per_100k_annual": 2.46,
+    "percentile": 0.7692
    },
    "violent_lethality": {
-    "typical_monthly": 2.917,
-    "recent_monthly": 2.833,
-    "per_100k_annual": 14.34,
-    "percentile": 0.2967
+    "typical_monthly": 3.583,
+    "recent_monthly": 4.833,
+    "per_100k_annual": 17.61,
+    "percentile": 0.5055
    },
-   "relative_level": "below"
+   "relative_level": "above"
   },
   "3301850": {
    "name": "Guapimirim",
-   "population": 54311,
+   "population": 54316,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.75,
-    "recent_monthly": 0.667,
+    "recent_monthly": 0.833,
     "per_100k_annual": 16.57,
-    "percentile": 0.3736
+    "percentile": 0.4176
    },
    "relative_level": "typical"
   },
   "3301900": {
    "name": "Itaboraí",
-   "population": 240127,
+   "population": 240169,
    "police_lethality": {
-    "typical_monthly": 0.75,
-    "recent_monthly": 0.167,
-    "per_100k_annual": 3.75,
-    "percentile": 0.8462
+    "typical_monthly": 0.833,
+    "recent_monthly": 0.667,
+    "per_100k_annual": 4.16,
+    "percentile": 0.8571
    },
    "violent_lethality": {
-    "typical_monthly": 3.417,
-    "recent_monthly": 3.5,
-    "per_100k_annual": 17.07,
-    "percentile": 0.4505
+    "typical_monthly": 3.667,
+    "recent_monthly": 3.333,
+    "per_100k_annual": 18.32,
+    "percentile": 0.5495
    },
-   "relative_level": "below"
+   "relative_level": "typical"
   },
   "3305752": {
    "name": "Tanguá",
-   "population": 32865,
+   "population": 32868,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.5,
-    "recent_monthly": 0.5,
-    "per_100k_annual": 18.26,
-    "percentile": 0.5165
+    "recent_monthly": 0.333,
+    "per_100k_annual": 18.25,
+    "percentile": 0.5385
    },
    "relative_level": "typical"
   },
   "3304904": {
    "name": "São Gonçalo",
-   "population": 960196,
+   "population": 959977,
    "police_lethality": {
-    "typical_monthly": 4.083,
-    "recent_monthly": 4.667,
-    "per_100k_annual": 5.1,
-    "percentile": 0.9011
+    "typical_monthly": 4.25,
+    "recent_monthly": 3.5,
+    "per_100k_annual": 5.31,
+    "percentile": 0.9121
    },
    "violent_lethality": {
-    "typical_monthly": 13.667,
-    "recent_monthly": 17.5,
-    "per_100k_annual": 17.08,
-    "percentile": 0.4615
+    "typical_monthly": 13.167,
+    "recent_monthly": 10.0,
+    "per_100k_annual": 16.46,
+    "percentile": 0.4066
    },
    "relative_level": "typical"
   },
   "3303302": {
    "name": "Niterói",
-   "population": 516787,
+   "population": 516820,
    "police_lethality": {
-    "typical_monthly": 1.583,
-    "recent_monthly": 2.5,
-    "per_100k_annual": 3.68,
-    "percentile": 0.8352
+    "typical_monthly": 1.75,
+    "recent_monthly": 1.0,
+    "per_100k_annual": 4.06,
+    "percentile": 0.8462
    },
    "violent_lethality": {
-    "typical_monthly": 5.5,
-    "recent_monthly": 7.667,
-    "per_100k_annual": 12.77,
-    "percentile": 0.2637
+    "typical_monthly": 5.75,
+    "recent_monthly": 3.333,
+    "per_100k_annual": 13.35,
+    "percentile": 0.2747
    },
-   "relative_level": "above"
+   "relative_level": "below"
   },
   "3302700": {
    "name": "Maricá",
-   "population": 212470,
+   "population": 212703,
    "police_lethality": {
-    "typical_monthly": 0.25,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 1.41,
-    "percentile": 0.7143
+    "typical_monthly": 0.333,
+    "recent_monthly": 0.167,
+    "per_100k_annual": 1.88,
+    "percentile": 0.7473
    },
    "violent_lethality": {
-    "typical_monthly": 1.583,
-    "recent_monthly": 0.833,
-    "per_100k_annual": 8.94,
-    "percentile": 0.1429
+    "typical_monthly": 1.833,
+    "recent_monthly": 1.833,
+    "per_100k_annual": 10.34,
+    "percentile": 0.1758
    },
    "relative_level": "below"
   },
   "3300308": {
    "name": "Barra do Piraí",
-   "population": 98506,
+   "population": 98508,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.917,
-    "recent_monthly": 1.0,
+    "recent_monthly": 1.333,
     "per_100k_annual": 11.17,
     "percentile": 0.2088
    },
@@ -348,154 +348,154 @@
   },
   "3304201": {
    "name": "Resende",
-   "population": 137697,
+   "population": 137739,
    "police_lethality": {
-    "typical_monthly": 0.25,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 2.18,
-    "percentile": 0.7582
+    "typical_monthly": 0.167,
+    "recent_monthly": 0.333,
+    "per_100k_annual": 1.45,
+    "percentile": 0.7143
    },
    "violent_lethality": {
-    "typical_monthly": 2.833,
-    "recent_monthly": 2.333,
-    "per_100k_annual": 24.69,
-    "percentile": 0.7033
+    "typical_monthly": 3.167,
+    "recent_monthly": 3.0,
+    "per_100k_annual": 27.59,
+    "percentile": 0.8022
    },
-   "relative_level": "below"
+   "relative_level": "above"
   },
   "3300407": {
    "name": "Barra Mansa",
-   "population": 181679,
+   "population": 181675,
    "police_lethality": {
-    "typical_monthly": 0.083,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 0.55,
-    "percentile": 0.6374
+    "typical_monthly": 0.167,
+    "recent_monthly": 0.333,
+    "per_100k_annual": 1.1,
+    "percentile": 0.6813
    },
    "violent_lethality": {
-    "typical_monthly": 5.0,
-    "recent_monthly": 4.0,
-    "per_100k_annual": 33.03,
-    "percentile": 0.8681
+    "typical_monthly": 3.667,
+    "recent_monthly": 2.667,
+    "per_100k_annual": 24.22,
+    "percentile": 0.7363
    },
-   "relative_level": "below"
+   "relative_level": "above"
   },
   "3306107": {
    "name": "Valença",
-   "population": 71449,
+   "population": 71442,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 1.083,
-    "recent_monthly": 1.333,
-    "per_100k_annual": 18.19,
-    "percentile": 0.5055
+    "typical_monthly": 0.833,
+    "recent_monthly": 0.333,
+    "per_100k_annual": 14.0,
+    "percentile": 0.3187
    },
    "relative_level": "typical"
   },
   "3304508": {
    "name": "Rio das Flores",
-   "population": 9267,
+   "population": 9269,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.022
+    "percentile": 0.033
    },
    "relative_level": "typical"
   },
   "3306305": {
    "name": "Volta Redonda",
-   "population": 279971,
+   "population": 280006,
    "police_lethality": {
     "typical_monthly": 0.333,
-    "recent_monthly": 0.167,
+    "recent_monthly": 0.5,
     "per_100k_annual": 1.43,
-    "percentile": 0.7253
+    "percentile": 0.7033
    },
    "violent_lethality": {
-    "typical_monthly": 4.583,
-    "recent_monthly": 4.833,
-    "per_100k_annual": 19.64,
-    "percentile": 0.5495
+    "typical_monthly": 3.917,
+    "recent_monthly": 2.333,
+    "per_100k_annual": 16.79,
+    "percentile": 0.4396
    },
-   "relative_level": "below"
+   "relative_level": "above"
   },
   "3304003": {
    "name": "Piraí",
-   "population": 29066,
+   "population": 29072,
    "police_lethality": {
     "typical_monthly": 0.083,
     "recent_monthly": 0.0,
     "per_100k_annual": 3.44,
-    "percentile": 0.8022
+    "percentile": 0.8242
    },
    "violent_lethality": {
-    "typical_monthly": 0.583,
+    "typical_monthly": 0.333,
     "recent_monthly": 0.167,
-    "per_100k_annual": 24.08,
-    "percentile": 0.6703
+    "per_100k_annual": 13.76,
+    "percentile": 0.2967
    },
    "relative_level": "below"
   },
   "3303955": {
    "name": "Pinheiral",
-   "population": 25096,
+   "population": 25102,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.333,
-    "recent_monthly": 0.667,
-    "per_100k_annual": 15.94,
-    "percentile": 0.3187
+    "recent_monthly": 0.0,
+    "per_100k_annual": 15.93,
+    "percentile": 0.3516
    },
    "relative_level": "typical"
   },
   "3306206": {
    "name": "Vassouras",
-   "population": 35907,
+   "population": 35908,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.5,
-    "recent_monthly": 0.5,
-    "per_100k_annual": 16.71,
-    "percentile": 0.3846
+    "typical_monthly": 0.417,
+    "recent_monthly": 0.167,
+    "per_100k_annual": 13.92,
+    "percentile": 0.3077
    },
    "relative_level": "typical"
   },
   "3302908": {
    "name": "Miguel Pereira",
-   "population": 28142,
+   "population": 28151,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 1.0,
-    "recent_monthly": 0.833,
-    "per_100k_annual": 42.64,
-    "percentile": 0.9231
+    "typical_monthly": 1.25,
+    "recent_monthly": 1.667,
+    "per_100k_annual": 53.28,
+    "percentile": 0.989
    },
    "relative_level": "typical"
   },
@@ -506,234 +506,234 @@
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.167,
     "recent_monthly": 0.167,
     "per_100k_annual": 11.08,
-    "percentile": 0.1758
+    "percentile": 0.1978
    },
    "relative_level": "typical"
   },
   "3301801": {
    "name": "Engenheiro Paulo de Frontin",
-   "population": 12644,
+   "population": 12804,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.083,
+    "typical_monthly": 0.0,
     "recent_monthly": 0.0,
-    "per_100k_annual": 7.91,
-    "percentile": 0.0879
+    "per_100k_annual": 0.0,
+    "percentile": 0.033
    },
    "relative_level": "typical"
   },
   "3302254": {
    "name": "Itatiaia",
-   "population": 32713,
-   "police_lethality": {
-    "typical_monthly": 0.083,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 3.06,
-    "percentile": 0.7802
-   },
-   "violent_lethality": {
-    "typical_monthly": 1.833,
-    "recent_monthly": 2.167,
-    "per_100k_annual": 67.25,
-    "percentile": 0.989
-   },
-   "relative_level": "below"
-  },
-  "3304110": {
-   "name": "Porto Real",
-   "population": 21089,
+   "population": 32721,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
+   },
+   "violent_lethality": {
+    "typical_monthly": 2.167,
+    "recent_monthly": 2.333,
+    "per_100k_annual": 79.46,
+    "percentile": 1.0
+   },
+   "relative_level": "typical"
+  },
+  "3304110": {
+   "name": "Porto Real",
+   "population": 21101,
+   "police_lethality": {
+    "typical_monthly": 0.0,
+    "recent_monthly": 0.0,
+    "per_100k_annual": 0.0,
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.299,
-    "recent_monthly": 0.199,
-    "per_100k_annual": 17.02,
-    "percentile": 0.4396
+    "recent_monthly": 0.499,
+    "per_100k_annual": 17.01,
+    "percentile": 0.4945
    },
    "relative_level": "typical"
   },
   "3304128": {
    "name": "Quatis",
-   "population": 14165,
+   "population": 14168,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.201,
-    "recent_monthly": 0.134,
-    "per_100k_annual": 17.02,
-    "percentile": 0.4396
+    "recent_monthly": 0.335,
+    "per_100k_annual": 17.01,
+    "percentile": 0.4945
    },
    "relative_level": "typical"
   },
   "3305158": {
    "name": "São José do Vale do Rio Preto",
-   "population": 22813,
+   "population": 22775,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.167,
-    "recent_monthly": 0.333,
-    "per_100k_annual": 8.77,
-    "percentile": 0.1099
+    "recent_monthly": 0.167,
+    "per_100k_annual": 8.78,
+    "percentile": 0.1209
    },
    "relative_level": "typical"
   },
   "3303906": {
    "name": "Petrópolis",
-   "population": 294926,
+   "population": 294954,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 2.167,
-    "recent_monthly": 2.667,
-    "per_100k_annual": 8.82,
-    "percentile": 0.1319
+    "typical_monthly": 2.0,
+    "recent_monthly": 1.5,
+    "per_100k_annual": 8.14,
+    "percentile": 0.0989
    },
    "relative_level": "typical"
   },
   "3303708": {
    "name": "Paraíba do Sul",
-   "population": 44479,
+   "population": 44485,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.167,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 4.5,
-    "percentile": 0.044
+    "typical_monthly": 0.333,
+    "recent_monthly": 0.5,
+    "per_100k_annual": 8.99,
+    "percentile": 0.1429
    },
    "relative_level": "typical"
   },
   "3300951": {
    "name": "Comendador Levy Gasparian",
-   "population": 9048,
-   "police_lethality": {
-    "typical_monthly": 0.007,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 0.97,
-    "percentile": 0.6923
-   },
-   "violent_lethality": {
-    "typical_monthly": 0.196,
-    "recent_monthly": 0.116,
-    "per_100k_annual": 26.06,
-    "percentile": 0.7692
-   },
-   "relative_level": "below"
-  },
-  "3300225": {
-   "name": "Areal",
-   "population": 12239,
-   "police_lethality": {
-    "typical_monthly": 0.01,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 0.97,
-    "percentile": 0.6923
-   },
-   "violent_lethality": {
-    "typical_monthly": 0.266,
-    "recent_monthly": 0.158,
-    "per_100k_annual": 26.06,
-    "percentile": 0.7692
-   },
-   "relative_level": "below"
-  },
-  "3306008": {
-   "name": "Três Rios",
-   "population": 82319,
-   "police_lethality": {
-    "typical_monthly": 0.066,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 0.97,
-    "percentile": 0.6923
-   },
-   "violent_lethality": {
-    "typical_monthly": 1.788,
-    "recent_monthly": 1.059,
-    "per_100k_annual": 26.06,
-    "percentile": 0.7692
-   },
-   "relative_level": "below"
-  },
-  "3305406": {
-   "name": "Sapucaia",
-   "population": 18291,
+   "population": 9050,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
+   },
+   "violent_lethality": {
+    "typical_monthly": 0.167,
+    "recent_monthly": 0.146,
+    "per_100k_annual": 22.2,
+    "percentile": 0.6703
+   },
+   "relative_level": "typical"
+  },
+  "3300225": {
+   "name": "Areal",
+   "population": 12213,
+   "police_lethality": {
+    "typical_monthly": 0.0,
+    "recent_monthly": 0.0,
+    "per_100k_annual": 0.0,
+    "percentile": 0.6484
+   },
+   "violent_lethality": {
+    "typical_monthly": 0.226,
+    "recent_monthly": 0.196,
+    "per_100k_annual": 22.2,
+    "percentile": 0.6703
+   },
+   "relative_level": "typical"
+  },
+  "3306008": {
+   "name": "Três Rios",
+   "population": 82329,
+   "police_lethality": {
+    "typical_monthly": 0.0,
+    "recent_monthly": 0.0,
+    "per_100k_annual": 0.0,
+    "percentile": 0.6484
+   },
+   "violent_lethality": {
+    "typical_monthly": 1.523,
+    "recent_monthly": 1.325,
+    "per_100k_annual": 22.2,
+    "percentile": 0.6703
+   },
+   "relative_level": "typical"
+  },
+  "3305406": {
+   "name": "Sapucaia",
+   "population": 18292,
+   "police_lethality": {
+    "typical_monthly": 0.0,
+    "recent_monthly": 0.0,
+    "per_100k_annual": 0.0,
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.25,
     "recent_monthly": 0.333,
     "per_100k_annual": 16.4,
-    "percentile": 0.3516
+    "percentile": 0.3956
    },
    "relative_level": "typical"
   },
   "3305802": {
    "name": "Teresópolis",
-   "population": 176735,
+   "population": 176772,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 1.667,
-    "recent_monthly": 1.667,
-    "per_100k_annual": 11.32,
-    "percentile": 0.2198
+    "typical_monthly": 1.583,
+    "recent_monthly": 1.333,
+    "per_100k_annual": 10.75,
+    "percentile": 0.1868
    },
    "relative_level": "typical"
   },
   "3305703": {
    "name": "Sumidouro",
-   "population": 15693,
+   "population": 15695,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.167,
+    "typical_monthly": 0.25,
     "recent_monthly": 0.333,
-    "per_100k_annual": 12.74,
-    "percentile": 0.2527
+    "per_100k_annual": 19.11,
+    "percentile": 0.5934
    },
    "relative_level": "typical"
   },
@@ -744,676 +744,676 @@
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.083,
-    "recent_monthly": 0.0,
+    "recent_monthly": 0.167,
     "per_100k_annual": 5.64,
-    "percentile": 0.0659
+    "percentile": 0.0549
    },
    "relative_level": "typical"
   },
   "3300209": {
    "name": "Araruama",
-   "population": 137906,
+   "population": 137922,
    "police_lethality": {
     "typical_monthly": 0.083,
-    "recent_monthly": 0.167,
+    "recent_monthly": 0.0,
     "per_100k_annual": 0.73,
-    "percentile": 0.6484
+    "percentile": 0.6703
    },
    "violent_lethality": {
-    "typical_monthly": 1.417,
-    "recent_monthly": 1.5,
-    "per_100k_annual": 12.33,
-    "percentile": 0.2418
-   },
-   "relative_level": "above"
-  },
-  "3304300": {
-   "name": "Rio Bonito",
-   "population": 59126,
-   "police_lethality": {
-    "typical_monthly": 0.0,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 0.0,
-    "percentile": 0.6154
-   },
-   "violent_lethality": {
-    "typical_monthly": 0.583,
-    "recent_monthly": 0.333,
-    "per_100k_annual": 11.84,
-    "percentile": 0.2308
-   },
-   "relative_level": "typical"
-  },
-  "3305604": {
-   "name": "Silva Jardim",
-   "population": 22028,
-   "police_lethality": {
-    "typical_monthly": 0.083,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 4.54,
-    "percentile": 0.8791
-   },
-   "violent_lethality": {
-    "typical_monthly": 1.25,
-    "recent_monthly": 0.833,
-    "per_100k_annual": 68.1,
-    "percentile": 1.0
+    "typical_monthly": 1.5,
+    "recent_monthly": 1.667,
+    "per_100k_annual": 13.05,
+    "percentile": 0.2637
    },
    "relative_level": "below"
   },
-  "3301306": {
-   "name": "Casimiro de Abreu",
-   "population": 48636,
+  "3304300": {
+   "name": "Rio Bonito",
+   "population": 59147,
+   "police_lethality": {
+    "typical_monthly": 0.083,
+    "recent_monthly": 0.167,
+    "per_100k_annual": 1.69,
+    "percentile": 0.7253
+   },
+   "violent_lethality": {
+    "typical_monthly": 0.833,
+    "recent_monthly": 1.0,
+    "per_100k_annual": 16.91,
+    "percentile": 0.4725
+   },
+   "relative_level": "above"
+  },
+  "3305604": {
+   "name": "Silva Jardim",
+   "population": 22029,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.833,
-    "recent_monthly": 1.333,
-    "per_100k_annual": 20.56,
-    "percentile": 0.5714
+    "typical_monthly": 0.417,
+    "recent_monthly": 0.5,
+    "per_100k_annual": 22.7,
+    "percentile": 0.6923
+   },
+   "relative_level": "typical"
+  },
+  "3301306": {
+   "name": "Casimiro de Abreu",
+   "population": 48672,
+   "police_lethality": {
+    "typical_monthly": 0.0,
+    "recent_monthly": 0.0,
+    "per_100k_annual": 0.0,
+    "percentile": 0.6484
+   },
+   "violent_lethality": {
+    "typical_monthly": 1.0,
+    "recent_monthly": 1.0,
+    "per_100k_annual": 24.65,
+    "percentile": 0.7473
    },
    "relative_level": "typical"
   },
   "3301405": {
    "name": "Conceição de Macabu",
-   "population": 21770,
+   "population": 21771,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.417,
-    "recent_monthly": 0.5,
-    "per_100k_annual": 22.97,
-    "percentile": 0.6374
+    "typical_monthly": 0.333,
+    "recent_monthly": 0.167,
+    "per_100k_annual": 18.37,
+    "percentile": 0.5604
    },
    "relative_level": "typical"
   },
   "3302403": {
    "name": "Macaé",
-   "population": 264439,
+   "population": 264583,
    "police_lethality": {
-    "typical_monthly": 0.167,
-    "recent_monthly": 0.333,
-    "per_100k_annual": 0.76,
-    "percentile": 0.6593
+    "typical_monthly": 0.417,
+    "recent_monthly": 0.667,
+    "per_100k_annual": 1.89,
+    "percentile": 0.7582
    },
    "violent_lethality": {
-    "typical_monthly": 1.75,
-    "recent_monthly": 1.833,
-    "per_100k_annual": 7.94,
-    "percentile": 0.0989
+    "typical_monthly": 1.917,
+    "recent_monthly": 2.0,
+    "per_100k_annual": 8.69,
+    "percentile": 0.1099
    },
    "relative_level": "above"
   },
   "3304151": {
    "name": "Quissamã",
-   "population": 23142,
+   "population": 23149,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.412,
+    "typical_monthly": 0.309,
     "recent_monthly": 0.515,
-    "per_100k_annual": 21.35,
-    "percentile": 0.6044
+    "per_100k_annual": 16.01,
+    "percentile": 0.3736
    },
    "relative_level": "typical"
   },
   "3300936": {
    "name": "Carapebus",
-   "population": 14329,
+   "population": 14331,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.255,
+    "typical_monthly": 0.191,
     "recent_monthly": 0.319,
-    "per_100k_annual": 21.35,
-    "percentile": 0.6044
+    "per_100k_annual": 16.01,
+    "percentile": 0.3736
    },
    "relative_level": "typical"
   },
   "3305505": {
    "name": "Saquarema",
-   "population": 95315,
+   "population": 95355,
    "police_lethality": {
     "typical_monthly": 0.417,
     "recent_monthly": 0.5,
-    "per_100k_annual": 5.25,
-    "percentile": 0.9121
+    "per_100k_annual": 5.24,
+    "percentile": 0.9011
    },
    "violent_lethality": {
-    "typical_monthly": 3.833,
-    "recent_monthly": 3.167,
-    "per_100k_annual": 48.26,
-    "percentile": 0.9341
+    "typical_monthly": 3.0,
+    "recent_monthly": 2.5,
+    "per_100k_annual": 37.75,
+    "percentile": 0.9231
    },
    "relative_level": "typical"
   },
   "3305208": {
    "name": "São Pedro da Aldeia",
-   "population": 110677,
+   "population": 110735,
    "police_lethality": {
-    "typical_monthly": 0.333,
-    "recent_monthly": 0.667,
-    "per_100k_annual": 3.61,
-    "percentile": 0.8132
+    "typical_monthly": 0.417,
+    "recent_monthly": 0.333,
+    "per_100k_annual": 4.52,
+    "percentile": 0.8791
    },
    "violent_lethality": {
-    "typical_monthly": 3.0,
-    "recent_monthly": 4.0,
-    "per_100k_annual": 32.53,
-    "percentile": 0.8571
+    "typical_monthly": 3.25,
+    "recent_monthly": 2.167,
+    "per_100k_annual": 35.22,
+    "percentile": 0.9121
    },
-   "relative_level": "above"
+   "relative_level": "typical"
   },
   "3300704": {
    "name": "Cabo Frio",
-   "population": 238438,
+   "population": 236772,
    "police_lethality": {
-    "typical_monthly": 1.25,
+    "typical_monthly": 1.333,
     "recent_monthly": 1.833,
-    "per_100k_annual": 6.29,
-    "percentile": 0.9451
+    "per_100k_annual": 6.76,
+    "percentile": 0.956
    },
    "violent_lethality": {
-    "typical_monthly": 6.417,
-    "recent_monthly": 7.5,
-    "per_100k_annual": 32.29,
+    "typical_monthly": 5.917,
+    "recent_monthly": 5.667,
+    "per_100k_annual": 29.99,
     "percentile": 0.8462
    },
    "relative_level": "above"
   },
   "3300258": {
    "name": "Arraial do Cabo",
-   "population": 32822,
+   "population": 32835,
    "police_lethality": {
     "typical_monthly": 0.417,
-    "recent_monthly": 0.667,
+    "recent_monthly": 0.167,
     "per_100k_annual": 15.23,
     "percentile": 1.0
    },
    "violent_lethality": {
-    "typical_monthly": 0.75,
-    "recent_monthly": 1.0,
-    "per_100k_annual": 27.42,
-    "percentile": 0.7912
+    "typical_monthly": 0.833,
+    "recent_monthly": 0.5,
+    "per_100k_annual": 30.46,
+    "percentile": 0.8571
    },
-   "relative_level": "above"
+   "relative_level": "below"
   },
   "3300233": {
    "name": "Armação dos Búzios",
-   "population": 42527,
+   "population": 44365,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.583,
-    "recent_monthly": 0.667,
-    "per_100k_annual": 16.46,
-    "percentile": 0.3626
+    "recent_monthly": 0.5,
+    "per_100k_annual": 15.78,
+    "percentile": 0.3407
    },
    "relative_level": "typical"
   },
   "3304524": {
    "name": "Rio das Ostras",
-   "population": 168455,
+   "population": 168626,
    "police_lethality": {
     "typical_monthly": 0.417,
-    "recent_monthly": 0.667,
+    "recent_monthly": 0.333,
     "per_100k_annual": 2.97,
-    "percentile": 0.7692
+    "percentile": 0.7912
    },
    "violent_lethality": {
     "typical_monthly": 1.917,
     "recent_monthly": 1.667,
-    "per_100k_annual": 13.65,
+    "per_100k_annual": 13.64,
     "percentile": 0.2857
    },
-   "relative_level": "above"
+   "relative_level": "typical"
   },
   "3301876": {
    "name": "Iguaba Grande",
-   "population": 29616,
+   "population": 29681,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.417,
-    "recent_monthly": 0.5,
-    "per_100k_annual": 16.88,
-    "percentile": 0.4176
+    "recent_monthly": 0.333,
+    "per_100k_annual": 16.85,
+    "percentile": 0.4615
    },
    "relative_level": "typical"
   },
   "3301009": {
    "name": "Campos dos Goytacazes",
-   "population": 519259,
+   "population": 519378,
    "police_lethality": {
     "typical_monthly": 0.167,
-    "recent_monthly": 0.333,
+    "recent_monthly": 0.0,
     "per_100k_annual": 0.39,
-    "percentile": 0.6264
+    "percentile": 0.6593
    },
    "violent_lethality": {
-    "typical_monthly": 9.417,
-    "recent_monthly": 10.333,
-    "per_100k_annual": 21.76,
-    "percentile": 0.6154
+    "typical_monthly": 9.5,
+    "recent_monthly": 8.5,
+    "per_100k_annual": 21.95,
+    "percentile": 0.6374
    },
-   "relative_level": "above"
+   "relative_level": "below"
   },
   "3302106": {
    "name": "Itaocara",
-   "population": 23645,
+   "population": 23646,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.417,
-    "recent_monthly": 0.167,
-    "per_100k_annual": 21.15,
-    "percentile": 0.5824
+    "typical_monthly": 0.25,
+    "recent_monthly": 0.5,
+    "per_100k_annual": 12.69,
+    "percentile": 0.2418
    },
    "relative_level": "typical"
   },
   "3304706": {
    "name": "Santo Antônio de Pádua",
-   "population": 43697,
+   "population": 43703,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.595,
-    "recent_monthly": 0.661,
-    "per_100k_annual": 16.33,
-    "percentile": 0.3407
+    "typical_monthly": 0.661,
+    "recent_monthly": 0.264,
+    "per_100k_annual": 18.14,
+    "percentile": 0.5275
    },
    "relative_level": "typical"
   },
   "3300159": {
    "name": "Aperibé",
-   "population": 11426,
+   "population": 11429,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.155,
-    "recent_monthly": 0.173,
-    "per_100k_annual": 16.33,
-    "percentile": 0.3407
+    "typical_monthly": 0.173,
+    "recent_monthly": 0.069,
+    "per_100k_annual": 18.14,
+    "percentile": 0.5275
    },
    "relative_level": "typical"
   },
   "3303005": {
    "name": "Miracema",
-   "population": 28416,
+   "population": 28418,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.083,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 3.52,
-    "percentile": 0.033
+    "typical_monthly": 0.167,
+    "recent_monthly": 0.167,
+    "per_100k_annual": 7.04,
+    "percentile": 0.0659
    },
    "relative_level": "typical"
   },
   "3302304": {
    "name": "Laje do Muriaé",
-   "population": 7584,
+   "population": 7582,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.333,
-    "recent_monthly": 0.333,
-    "per_100k_annual": 52.74,
-    "percentile": 0.967
+    "typical_monthly": 0.25,
+    "recent_monthly": 0.0,
+    "per_100k_annual": 39.57,
+    "percentile": 0.9341
    },
    "relative_level": "typical"
   },
   "3304102": {
    "name": "Porciúncula",
-   "population": 17832,
+   "population": 17833,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.083,
-    "recent_monthly": 0.167,
-    "per_100k_annual": 5.61,
-    "percentile": 0.0549
+    "typical_monthly": 0.167,
+    "recent_monthly": 0.333,
+    "per_100k_annual": 11.22,
+    "percentile": 0.2198
    },
    "relative_level": "typical"
   },
   "3303104": {
    "name": "Natividade",
-   "population": 15551,
+   "population": 15552,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.496,
-    "recent_monthly": 0.199,
-    "per_100k_annual": 38.29,
-    "percentile": 0.9121
+    "typical_monthly": 0.447,
+    "recent_monthly": 0.298,
+    "per_100k_annual": 34.46,
+    "percentile": 0.9011
    },
    "relative_level": "typical"
   },
   "3306156": {
    "name": "Varre-Sai",
-   "population": 10563,
+   "population": 10565,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.337,
-    "recent_monthly": 0.135,
-    "per_100k_annual": 38.29,
-    "percentile": 0.9121
+    "typical_monthly": 0.303,
+    "recent_monthly": 0.202,
+    "per_100k_annual": 34.46,
+    "percentile": 0.9011
    },
    "relative_level": "typical"
   },
   "3304805": {
    "name": "São Fidélis",
-   "population": 41212,
+   "population": 41220,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.667,
-    "recent_monthly": 1.0,
+    "recent_monthly": 0.833,
     "per_100k_annual": 19.41,
-    "percentile": 0.5385
+    "percentile": 0.6044
    },
    "relative_level": "typical"
   },
   "3300902": {
    "name": "Cambuci",
-   "population": 15069,
+   "population": 15060,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.25,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 19.91,
-    "percentile": 0.5604
+    "typical_monthly": 0.417,
+    "recent_monthly": 0.5,
+    "per_100k_annual": 33.2,
+    "percentile": 0.8791
    },
    "relative_level": "typical"
   },
   "3302205": {
    "name": "Itaperuna",
-   "population": 107297,
+   "population": 107322,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 4.681,
-    "recent_monthly": 4.525,
-    "per_100k_annual": 52.35,
-    "percentile": 0.956
+    "typical_monthly": 4.212,
+    "recent_monthly": 3.9,
+    "per_100k_annual": 47.1,
+    "percentile": 0.967
    },
    "relative_level": "typical"
   },
   "3305133": {
    "name": "São José de Ubá",
-   "population": 7318,
+   "population": 7328,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.319,
-    "recent_monthly": 0.309,
-    "per_100k_annual": 52.35,
-    "percentile": 0.956
+    "typical_monthly": 0.288,
+    "recent_monthly": 0.266,
+    "per_100k_annual": 47.1,
+    "percentile": 0.967
    },
    "relative_level": "typical"
   },
   "3301157": {
    "name": "Cardoso Moreira",
-   "population": 13407,
+   "population": 13418,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.2,
-    "recent_monthly": 0.32,
-    "per_100k_annual": 17.91,
-    "percentile": 0.4945
+    "typical_monthly": 0.28,
+    "recent_monthly": 0.24,
+    "per_100k_annual": 25.06,
+    "percentile": 0.7802
    },
    "relative_level": "typical"
   },
   "3302056": {
    "name": "Italva",
-   "population": 14518,
+   "population": 14510,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.217,
-    "recent_monthly": 0.347,
-    "per_100k_annual": 17.91,
-    "percentile": 0.4945
+    "typical_monthly": 0.303,
+    "recent_monthly": 0.26,
+    "per_100k_annual": 25.06,
+    "percentile": 0.7802
    },
    "relative_level": "typical"
   },
   "3300605": {
    "name": "Bom Jesus do Itabapoana",
-   "population": 37176,
+   "population": 37178,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.75,
-    "recent_monthly": 0.667,
-    "per_100k_annual": 24.21,
-    "percentile": 0.6923
+    "typical_monthly": 0.5,
+    "recent_monthly": 0.333,
+    "per_100k_annual": 16.14,
+    "percentile": 0.3846
    },
    "relative_level": "typical"
   },
   "3305000": {
    "name": "São João da Barra",
-   "population": 38740,
+   "population": 38756,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.75,
-    "recent_monthly": 0.667,
-    "per_100k_annual": 23.23,
-    "percentile": 0.6484
+    "typical_monthly": 0.417,
+    "recent_monthly": 0.167,
+    "per_100k_annual": 12.9,
+    "percentile": 0.2527
    },
    "relative_level": "typical"
   },
   "3304755": {
    "name": "São Francisco de Itabapoana",
-   "population": 47397,
+   "population": 47411,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 2.5,
-    "recent_monthly": 2.333,
-    "per_100k_annual": 63.3,
+    "typical_monthly": 2.083,
+    "recent_monthly": 1.333,
+    "per_100k_annual": 52.73,
     "percentile": 0.978
    },
    "relative_level": "typical"
   },
   "3303401": {
    "name": "Nova Friburgo",
-   "population": 203417,
-   "police_lethality": {
-    "typical_monthly": 0.167,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 0.98,
-    "percentile": 0.7033
-   },
-   "violent_lethality": {
-    "typical_monthly": 1.333,
-    "recent_monthly": 0.667,
-    "per_100k_annual": 7.87,
-    "percentile": 0.0769
-   },
-   "relative_level": "below"
-  },
-  "3301603": {
-   "name": "Duas Barras",
-   "population": 11355,
+   "population": 203460,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
+   },
+   "violent_lethality": {
+    "typical_monthly": 0.833,
+    "recent_monthly": 0.333,
+    "per_100k_annual": 4.91,
+    "percentile": 0.044
+   },
+   "relative_level": "typical"
+  },
+  "3301603": {
+   "name": "Duas Barras",
+   "population": 11356,
+   "police_lethality": {
+    "typical_monthly": 0.0,
+    "recent_monthly": 0.0,
+    "per_100k_annual": 0.0,
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.083,
     "recent_monthly": 0.0,
     "per_100k_annual": 8.81,
-    "percentile": 0.1209
+    "percentile": 0.1319
    },
    "relative_level": "typical"
   },
   "3301108": {
    "name": "Cantagalo",
-   "population": 19995,
+   "population": 20023,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.167,
-    "recent_monthly": 0.333,
-    "per_100k_annual": 10.0,
+    "recent_monthly": 0.0,
+    "per_100k_annual": 9.99,
     "percentile": 0.1648
    },
    "relative_level": "typical"
   },
   "3301504": {
    "name": "Cordeiro",
-   "population": 21448,
+   "population": 21422,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.198,
-    "recent_monthly": 0.132,
-    "per_100k_annual": 11.09,
-    "percentile": 0.1978
+    "typical_monthly": 0.132,
+    "recent_monthly": 0.0,
+    "per_100k_annual": 7.4,
+    "percentile": 0.0879
    },
    "relative_level": "typical"
   },
   "3302452": {
    "name": "Macuco",
-   "population": 5602,
+   "population": 5603,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.052,
-    "recent_monthly": 0.035,
-    "per_100k_annual": 11.09,
-    "percentile": 0.1978
+    "typical_monthly": 0.035,
+    "recent_monthly": 0.0,
+    "per_100k_annual": 7.4,
+    "percentile": 0.0879
    },
    "relative_level": "typical"
   },
   "3305307": {
    "name": "São Sebastião do Alto",
-   "population": 7993,
+   "population": 7990,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.022
+    "percentile": 0.033
    },
    "relative_level": "typical"
   },
@@ -1424,13 +1424,13 @@
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
     "typical_monthly": 0.25,
-    "recent_monthly": 0.5,
+    "recent_monthly": 0.0,
     "per_100k_annual": 28.36,
-    "percentile": 0.8242
+    "percentile": 0.8132
    },
    "relative_level": "typical"
   },
@@ -1441,100 +1441,100 @@
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.083,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 9.39,
-    "percentile": 0.1538
+    "typical_monthly": 0.167,
+    "recent_monthly": 0.333,
+    "per_100k_annual": 18.77,
+    "percentile": 0.5714
    },
    "relative_level": "typical"
   },
   "3300506": {
    "name": "Bom Jardim",
-   "population": 29758,
+   "population": 29769,
    "police_lethality": {
-    "typical_monthly": 0.0,
-    "recent_monthly": 0.0,
-    "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "typical_monthly": 0.083,
+    "recent_monthly": 0.167,
+    "per_100k_annual": 3.36,
+    "percentile": 0.8132
    },
    "violent_lethality": {
     "typical_monthly": 0.417,
-    "recent_monthly": 0.5,
+    "recent_monthly": 0.333,
     "per_100k_annual": 16.8,
-    "percentile": 0.4066
+    "percentile": 0.4505
    },
-   "relative_level": "typical"
+   "relative_level": "above"
   },
   "3300803": {
    "name": "Cachoeiras de Macacu",
-   "population": 59861,
+   "population": 59873,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 1.333,
-    "recent_monthly": 1.833,
-    "per_100k_annual": 26.73,
-    "percentile": 0.7802
+    "typical_monthly": 1.25,
+    "recent_monthly": 1.0,
+    "per_100k_annual": 25.05,
+    "percentile": 0.7582
    },
    "relative_level": "typical"
   },
   "3302601": {
    "name": "Mangaratiba",
-   "population": 43660,
+   "population": 43677,
    "police_lethality": {
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.917,
-    "recent_monthly": 1.167,
-    "per_100k_annual": 25.19,
-    "percentile": 0.7143
+    "typical_monthly": 0.833,
+    "recent_monthly": 0.833,
+    "per_100k_annual": 22.9,
+    "percentile": 0.7033
    },
    "relative_level": "typical"
   },
   "3300100": {
    "name": "Angra dos Reis",
-   "population": 179142,
+   "population": 179152,
    "police_lethality": {
-    "typical_monthly": 0.583,
-    "recent_monthly": 0.667,
-    "per_100k_annual": 3.91,
-    "percentile": 0.8571
+    "typical_monthly": 0.917,
+    "recent_monthly": 1.167,
+    "per_100k_annual": 6.14,
+    "percentile": 0.9451
    },
    "violent_lethality": {
-    "typical_monthly": 2.583,
-    "recent_monthly": 2.333,
-    "per_100k_annual": 17.3,
-    "percentile": 0.4725
+    "typical_monthly": 3.167,
+    "recent_monthly": 3.167,
+    "per_100k_annual": 21.21,
+    "percentile": 0.6154
    },
    "relative_level": "typical"
   },
   "3303807": {
    "name": "Paraty",
-   "population": 47668,
+   "population": 47694,
    "police_lethality": {
-    "typical_monthly": 0.333,
-    "recent_monthly": 0.333,
-    "per_100k_annual": 8.39,
-    "percentile": 0.989
+    "typical_monthly": 0.167,
+    "recent_monthly": 0.0,
+    "per_100k_annual": 4.19,
+    "percentile": 0.8681
    },
    "violent_lethality": {
-    "typical_monthly": 1.167,
-    "recent_monthly": 0.833,
-    "per_100k_annual": 29.37,
-    "percentile": 0.8352
+    "typical_monthly": 0.75,
+    "recent_monthly": 0.5,
+    "per_100k_annual": 18.87,
+    "percentile": 0.5824
    },
-   "relative_level": "typical"
+   "relative_level": "below"
   },
   "3304409": {
    "name": "Rio Claro",
@@ -1543,13 +1543,13 @@
     "typical_monthly": 0.0,
     "recent_monthly": 0.0,
     "per_100k_annual": 0.0,
-    "percentile": 0.6154
+    "percentile": 0.6484
    },
    "violent_lethality": {
-    "typical_monthly": 0.417,
-    "recent_monthly": 0.333,
-    "per_100k_annual": 27.85,
-    "percentile": 0.8132
+    "typical_monthly": 0.25,
+    "recent_monthly": 0.0,
+    "per_100k_annual": 16.71,
+    "percentile": 0.4286
    },
    "relative_level": "typical"
   }
