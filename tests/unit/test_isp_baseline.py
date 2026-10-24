@@ -1,6 +1,14 @@
-"""Tests for the ISP baseline ingestion transforms (pure, no network)."""
+"""Tests for the ISP baseline ingestion transforms and replacement guard."""
 
-from sinal_aberto.ingest.build_isp_baseline import _distribute, _resolve_codes
+import copy
+
+import pytest
+
+from sinal_aberto.ingest.build_isp_baseline import (
+    _distribute,
+    _resolve_codes,
+    validate_baseline,
+)
 from sinal_aberto.ingest.isp_transform import (
     aggregate_municipality_month,
     latest_ordinal,
@@ -19,6 +27,63 @@ _CSV = (
     "5;2;2026;Niteroi;0;3\n"
     "9;0;2026;Bad Row;9;9\n"  # invalid month -> skipped
 )
+
+
+def _baseline(period: str, count: int = 91) -> dict:
+    indicator = {
+        "typical_monthly": 1.0,
+        "recent_monthly": 2.0,
+        "per_100k_annual": 3.0,
+    }
+    return {
+        "meta": {"as_of": period},
+        "municipalities": {
+            str(3300000 + index): {
+                "population": 1000,
+                "police_lethality": indicator.copy(),
+                "violent_lethality": indicator.copy(),
+            }
+            for index in range(count)
+        },
+    }
+
+
+def test_baseline_replacement_requires_newer_complete_data() -> None:
+    existing = _baseline("2026-05")
+    assert validate_baseline(_baseline("2026-06"), existing)
+    assert not validate_baseline(_baseline("2026-05"), existing)
+    assert not validate_baseline(_baseline("2026-04"), existing)
+
+
+def test_baseline_replacement_rejects_lost_coverage() -> None:
+    existing = _baseline("2026-05", 92)
+    with pytest.raises(ValueError, match="coverage"):
+        validate_baseline(_baseline("2026-06"), existing)
+
+    candidate = _baseline("2026-06", 92)
+    candidate["municipalities"].pop("3300000")
+    candidate["municipalities"]["3399999"] = candidate["municipalities"]["3300001"]
+    with pytest.raises(ValueError, match="lost previously"):
+        validate_baseline(candidate, existing)
+
+
+def test_baseline_replacement_rejects_bad_values() -> None:
+    existing = _baseline("2026-05")
+    candidate = _baseline("2026-06")
+    code = next(iter(candidate["municipalities"]))
+    candidate["municipalities"][code]["population"] = None
+    with pytest.raises(ValueError, match="population"):
+        validate_baseline(candidate, existing)
+
+    candidate = copy.deepcopy(_baseline("2026-06"))
+    candidate["municipalities"][code]["police_lethality"]["recent_monthly"] = -1
+    with pytest.raises(ValueError, match="recent_monthly"):
+        validate_baseline(candidate, existing)
+
+
+def test_baseline_replacement_rejects_invalid_period() -> None:
+    with pytest.raises(ValueError, match="as_of"):
+        validate_baseline(_baseline("2026-13"))
 
 
 # -- parse / aggregate -------------------------------------------------

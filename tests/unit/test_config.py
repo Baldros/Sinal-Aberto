@@ -5,12 +5,41 @@ from `.env`, never from `os.environ`, so they cannot collide with system
 variables.
 """
 
+from pathlib import Path
+
 import pytest
 
+import sinal_aberto.config as config
 from sinal_aberto.config import _resolve, _resolve_port
 
 ENV_NAMES = ("FOGOCRUZADO_EMAIL", "FOGO_CRUZADO_EMAIL")
 FILE_NAMES = ("user", "username")
+
+
+def test_env_path_is_at_repository_root() -> None:
+    assert config._ENV_PATH == Path(__file__).resolve().parents[2] / ".env"
+
+
+def test_settings_read_project_env_from_another_cwd(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    project = tmp_path / "project"
+    project.mkdir()
+    env_path = project / ".env"
+    env_path.write_text("user=file@example.com\npassword=example-secret\n", encoding="utf-8")
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    monkeypatch.setattr(config, "_ENV_PATH", env_path)
+    for name in (*config._EMAIL_ENV_NAMES, *config._PASSWORD_ENV_NAMES):
+        monkeypatch.delenv(name, raising=False)
+    config.get_settings.cache_clear()
+    try:
+        settings = config.get_settings()
+        assert settings.fogocruzado_email == "file@example.com"
+        assert settings.fogocruzado_password == "example-secret"
+    finally:
+        config.get_settings.cache_clear()
 
 
 def test_prefers_specific_environment_variable(monkeypatch: pytest.MonkeyPatch) -> None:
