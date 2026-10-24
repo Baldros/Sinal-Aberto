@@ -376,6 +376,88 @@ Use this when real users, uptime, or lower cold-start risk become important.
 4. **First stable deploy:** Railway Hobby, paid Render, or cheap VPS once there are real users, uptime needs, and less tolerance for cold starts.
 5. **Production or scale:** persistent Postgres/PostGIS, Redis/Valkey when needed, logs, metrics, custom domain, privacy policy, and security review.
 
+## Next Stage: Public HTTPS MCP
+
+The next operational goal is a public HTTPS endpoint for the existing Python
+FastMCP server.
+
+Current server facts:
+
+- MCP transport: Streamable HTTP.
+- MCP endpoint path: `/mcp`.
+- Health-check path: `/health`.
+- Runtime entrypoint: `python -m sinal_aberto.server`.
+- Required secrets: `FOGOCRUZADO_EMAIL` and `FOGOCRUZADO_PASSWORD`.
+- Hosted port support: the app reads `SINAL_ABERTO_PORT` first, then platform
+  `PORT`, then defaults to `8000`.
+
+The repository now includes deployment scaffolding:
+
+- `render.yaml` for a Render web service blueprint.
+- `Dockerfile` and `.dockerignore` for Docker-compatible hosts such as Railway,
+  Fly.io, a VPS, or another container platform.
+- `.env.example` documenting the required environment variables.
+
+### Render MVP Deployment
+
+Use this path for the fastest public HTTPS MVP:
+
+1. Push the repository to GitHub.
+2. Create a Render Blueprint/Web Service from the repository.
+3. Let Render use `render.yaml`.
+4. Set secret environment variables:
+   - `FOGOCRUZADO_EMAIL`
+   - `FOGOCRUZADO_PASSWORD`
+5. Keep `SINAL_ABERTO_HOST=0.0.0.0`.
+6. Let the platform provide `PORT`; do not hardcode it unless needed.
+7. Confirm the service responds at:
+   - `https://<service-host>/health`
+   - `https://<service-host>/mcp`
+
+The MCP URL to distribute to clients is:
+
+```text
+https://<service-host>/mcp
+```
+
+Render Free remains useful for testing but has cold starts and no production
+availability guarantee. For a public app listing or real users, move to an
+always-on paid service, Railway/Fly/VPS, or another host with stable runtime,
+logs, and alerting.
+
+### Docker-Compatible Deployment
+
+For platforms that build from Docker:
+
+```bash
+docker build -t sinal-aberto-mcp .
+docker run --rm -p 8000:8000 \
+  -e SINAL_ABERTO_HOST=0.0.0.0 \
+  -e FOGOCRUZADO_EMAIL=... \
+  -e FOGOCRUZADO_PASSWORD=... \
+  sinal-aberto-mcp
+```
+
+Then test locally:
+
+```text
+http://localhost:8000/health
+http://localhost:8000/mcp
+```
+
+For production, put the container behind managed HTTPS or a reverse proxy with
+TLS.
+
+### Before ChatGPT/Claude Distribution
+
+Before publishing the URL broadly:
+
+- add a public privacy policy;
+- decide whether the MCP endpoint needs authentication or rate limiting;
+- verify logs do not store unnecessary user location or sensitive text;
+- test the `/mcp` endpoint from the target client;
+- document source coverage, limitations, and safety boundaries.
+
 ## Directory Publication
 
 ### ChatGPT App Directory

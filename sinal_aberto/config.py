@@ -62,6 +62,12 @@ def _resolve(env_names: tuple[str, ...], file_names: tuple[str, ...], file_value
     return None
 
 
+def _resolve_port() -> int:
+    """Resolve the HTTP port, supporting PaaS-provided PORT as a fallback."""
+    value = os.getenv("SINAL_ABERTO_PORT") or os.getenv("PORT") or "8000"
+    return int(value)
+
+
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     """Build the process-wide settings object once and reuse it across tool calls."""
@@ -98,5 +104,5 @@ def get_settings() -> Settings:
         ibge_base_url=ibge_base_url,
         cor_rio_base_url=cor_rio_base_url,
         host=os.getenv("SINAL_ABERTO_HOST", "127.0.0.1"),
-        port=int(os.getenv("SINAL_ABERTO_PORT", "8000")),
+        port=_resolve_port(),
     )
